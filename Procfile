@@ -1,1 +1,1 @@
-web: gunicorn scorecard.wsgi
+web: python manage.py migrate && gunicorn scorecard.wsgi
