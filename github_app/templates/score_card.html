@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ name }} - GitHub Score Card</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: linear-gradient(135deg, #0d1117 0%, #161b22 50%, #0d1117 100%); min-height: 100vh; font-family: 'Segoe UI', sans-serif; color: #e6edf3; }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(25px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes scaleIn { from { opacity: 0; transform: scale(0.85); } to { opacity: 1; transform: scale(1); } }
+        @keyframes glowPulse { 0%,100% { box-shadow: 0 0 20px rgba(35,134,54,0.3); } 50% { box-shadow: 0 0 40px rgba(35,134,54,0.6); } }
+        .au { animation: fadeInUp 0.6s ease forwards; }
+        .d1{animation-delay:.1s;opacity:0} .d2{animation-delay:.2s;opacity:0} .d3{animation-delay:.3s;opacity:0} .d4{animation-delay:.4s;opacity:0} .d5{animation-delay:.5s;opacity:0}
+        .glass-card { background: rgba(22,27,34,0.85); border: 1px solid rgba(48,54,61,0.8); border-radius: 16px; }
+        .profile-section { background: linear-gradient(135deg, rgba(36,41,47,0.9), rgba(22,27,34,0.9)); border: 1px solid rgba(48,54,61,0.8); border-radius: 20px; padding: 35px; }
+        .avatar { width: 100px; height: 100px; border-radius: 50%; border: 3px solid #238636; animation: glowPulse 2s infinite; }
+        .score-circle { width: 150px; height: 150px; border-radius: 50%; background: linear-gradient(135deg, #238636, #2ea043); display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 0 auto; animation: glowPulse 2s infinite, scaleIn 0.6s ease forwards; }
+        .score-number { font-size: 44px; font-weight: 800; color: white; line-height: 1; }
+        .score-label { font-size: 12px; color: rgba(255,255,255,0.8); }
+        .rank-badge { display: inline-block; padding: 7px 18px; border-radius: 50px; font-weight: 600; font-size: 14px; margin-top: 12px; }
+        .stat-card { background: rgba(22,27,34,0.9); border: 1px solid rgba(48,54,61,0.8); border-radius: 12px; padding: 16px; text-align: center; transition: transform 0.2s, border-color 0.2s; }
+        .stat-card:hover { transform: translateY(-4px); border-color: #238636; }
+        .stat-number { font-size: 26px; font-weight: 700; color: #58a6ff; }
+        .stat-label { font-size: 12px; color: #8b949e; margin-top: 3px; }
+        .progress { height: 10px; border-radius: 10px; background: rgba(48,54,61,0.8); }
+        .progress-bar { background: linear-gradient(90deg, #238636, #2ea043); border-radius: 10px; width: 0%; transition: width 1.5s ease; }
+        .lang-badge { display: inline-block; padding: 5px 13px; border-radius: 50px; background: rgba(56,139,253,0.15); border: 1px solid rgba(56,139,253,0.3); color: #58a6ff; font-size: 12px; margin: 3px; transition: all 0.2s; }
+        .lang-badge:hover { background: rgba(56,139,253,0.3); transform: translateY(-2px); }
+        .repo-card { background: rgba(22,27,34,0.9); border: 1px solid rgba(48,54,61,0.8); border-radius: 12px; padding: 16px; transition: border-color 0.2s, transform 0.2s; height: 100%; }
+        .repo-card:hover { border-color: #238636; transform: translateY(-4px); }
+        .repo-name a { color: #58a6ff; text-decoration: none; font-weight: 600; font-size: 14px; }
+        .repo-desc { color: #8b949e; font-size: 12px; line-height: 1.5; margin-top: 6px; }
+        .section-title { font-size: 12px; font-weight: 600; color: #8b949e; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 14px; }
+        .tip-item { display: flex; align-items: flex-start; gap: 10px; padding: 11px; border-radius: 10px; background: rgba(35,134,54,0.08); border: 1px solid rgba(35,134,54,0.2); margin-bottom: 8px; font-size: 13px; color: #e6edf3; transition: background 0.2s; }
+        .tip-item:hover { background: rgba(35,134,54,0.15); }
+        .completeness-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid rgba(48,54,61,0.4); font-size: 13px; }
+        .completeness-item:last-child { border-bottom: none; }
+        .check-yes { color: #238636; } .check-no { color: #da3633; }
+        .share-btn { display: inline-flex; align-items: center; gap: 7px; padding: 10px 18px; border-radius: 8px; border: none; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; text-decoration: none; margin: 4px; }
+        .share-btn:hover { transform: translateY(-2px); opacity: 0.9; }
+        .btn-linkedin { background: #0a66c2; color: white; }
+        .btn-copy { background: rgba(48,54,61,0.8); color: #e6edf3; border: 1px solid rgba(48,54,61,0.8); }
+        .btn-copy:hover { border-color: #238636; color: #2ea043; }
+        .btn-pdf { background: rgba(218,54,51,0.15); color: #f85149; border: 1px solid rgba(218,54,51,0.3); }
+        .btn-pdf:hover { background: rgba(218,54,51,0.25); }
+        .btn-lb { background: rgba(88,166,255,0.15); color: #58a6ff; border: 1px solid rgba(88,166,255,0.3); }
+        .btn-lb:hover { background: rgba(88,166,255,0.25); }
+        .back-btn { background: transparent; border: 1px solid rgba(48,54,61,0.8); color: #8b949e; padding: 10px 24px; border-radius: 8px; text-decoration: none; font-size: 13px; transition: all 0.2s; display: inline-block; }
+        .back-btn:hover { border-color: #58a6ff; color: #58a6ff; }
+        .toast-msg { position: fixed; bottom: 30px; right: 30px; background: #238636; color: white; padding: 12px 24px; border-radius: 10px; font-size: 14px; font-weight: 600; opacity: 0; transform: translateY(20px); transition: all 0.3s ease; z-index: 9999; }
+        .toast-msg.show { opacity: 1; transform: translateY(0); }
+        .all-repos-table { width: 100%; border-collapse: collapse; }
+        .all-repos-table th { background: rgba(48,54,61,0.5); color: #8b949e; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; padding: 11px 14px; text-align: left; }
+        .all-repos-table td { padding: 11px 14px; border-bottom: 1px solid rgba(48,54,61,0.4); font-size: 12px; }
+        .all-repos-table tr:hover td { background: rgba(48,54,61,0.3); }
+        .all-repos-table a { color: #58a6ff; text-decoration: none; }
+        .activity-badge { display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; border-radius: 50px; font-size: 14px; font-weight: 600; }
+        @media(max-width:768px) { .profile-section { padding: 20px; } .score-circle { width: 120px; height: 120px; } .score-number { font-size: 36px; } }
+    </style>
+</head>
+<body>
+<div class="container py-4" id="pdfContent">
+
+    {% if error %}
+    <div class="text-center mt-5">
+        <h2 class="text-danger">User Not Found ❌</h2>
+        <p class="text-muted mt-2">Username "{{ username }}" does not exist on GitHub.</p>
+        <a href="/" class="back-btn mt-3">← Go Back</a>
+    </div>
+    {% else %}
+
+    <div class="text-center mb-4 au d1">
+        <h1 style="font-size: 24px; font-weight: 700;"><i class="fab fa-github me-2"></i>GitHub Score Card</h1>
+    </div>
+
+    <!-- Profile + Score -->
+    <div class="profile-section mb-4 au d2">
+        <div class="row align-items-center">
+            <div class="col-md-7 mb-4 mb-md-0">
+                <div class="d-flex align-items-center gap-3">
+                    <img src="{{ avatar }}" class="avatar" alt="{{ name }}">
+                    <div>
+                        <h2 style="font-size: 20px; font-weight: 700; margin-bottom: 4px;">{{ name }}</h2>
+                        <a href="https://github.com/{{ username }}" target="_blank" style="color: #58a6ff; font-size: 13px; text-decoration: none;">
+                            <i class="fab fa-github me-1"></i>@{{ username }}
+                        </a>
+                        {% if bio %}<p style="color: #8b949e; font-size: 13px; margin-top: 6px;">{{ bio }}</p>{% endif %}
+                        <div class="d-flex flex-wrap gap-3 mt-2">
+                            {% if location %}<span style="font-size: 12px; color: #8b949e;"><i class="fas fa-map-marker-alt me-1"></i>{{ location }}</span>{% endif %}
+                            {% if account_age %}<span style="font-size: 12px; color: #8b949e;"><i class="fas fa-calendar me-1"></i>Member for {{ account_age }}</span>{% endif %}
+                            {% if website %}<a href="{{ website }}" target="_blank" style="font-size: 12px; color: #58a6ff;"><i class="fas fa-link me-1"></i>Website</a>{% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-5 text-center">
+                <div class="score-circle">
+                    <div class="score-number" id="scoreDisplay">0</div>
+                    <div class="score-label">out of 200</div>
+                </div>
+                <div class="rank-badge" style="background: rgba(35,134,54,0.15); border: 1px solid {{ rank_color }}; color: {{ rank_color }};">
+                    {{ rank_icon }} {{ rank }}
+                </div>
+            </div>
+        </div>
+        <div class="mt-4">
+            <div class="d-flex justify-content-between mb-2">
+                <span style="font-size: 12px; color: #8b949e;">Developer Score Progress</span>
+                <span style="font-size: 12px; color: #8b949e;">{{ score }}/200</span>
+            </div>
+            <div class="progress"><div class="progress-bar" id="progressBar"></div></div>
+        </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="row g-3 mb-4 au d3">
+        <div class="col-6 col-md-3">
+            <div class="stat-card">
+                <div class="stat-number">{{ total_repos }}</div>
+                <div class="stat-label"><i class="fas fa-book me-1"></i>Total Repos</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="stat-card">
+                <div class="stat-number" style="color: #2ea043;">{{ original_repos }}</div>
+                <div class="stat-label"><i class="fas fa-code me-1"></i>Original</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="stat-card">
+                <div class="stat-number" style="color: #8b949e;">{{ forked_repos }}</div>
+                <div class="stat-label"><i class="fas fa-code-branch me-1"></i>Forked</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="stat-card">
+                <div class="stat-number" style="color: #f0883e;">{{ total_stars }}</div>
+                <div class="stat-label"><i class="fas fa-star me-1"></i>Stars</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Activity + Completeness -->
+    <div class="row g-3 mb-4 au d3">
+        <div class="col-md-6">
+            <div class="glass-card p-4 h-100">
+                <div class="section-title">📅 Commit Activity (Last 30 Days)</div>
+                <div class="text-center py-2">
+                    <div class="activity-badge" style="background: rgba(35,134,54,0.1); border: 1px solid {{ activity_color }}; color: {{ activity_color }}; display: inline-flex; margin: 0 auto;">
+                        {{ activity_icon }} {{ activity_status }}
+                    </div>
+                    <div style="font-size: 42px; font-weight: 800; color: #58a6ff; margin: 12px 0;">{{ recent_commits }}</div>
+                    <div style="font-size: 13px; color: #8b949e;">commits in last 30 days</div>
+                    <div class="mt-2" style="font-size: 12px; color: #8b949e;">
+                        {% if recent_commits >= 30 %}Extremely active — keep it up! 🔥
+                        {% elif recent_commits >= 10 %}Good activity — stay consistent! ⚡
+                        {% elif recent_commits >= 1 %}Push code more often to boost score 📝
+                        {% else %}No recent commits — start coding today! 😴{% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="glass-card p-4 h-100">
+                <div class="section-title">👤 Profile Completeness</div>
+                <div class="d-flex align-items-center gap-3 mb-3">
+                    <div style="font-size: 36px; font-weight: 800; color: {% if completeness_percent >= 80 %}#238636{% elif completeness_percent >= 50 %}#fd7e14{% else %}#da3633{% endif %};">
+                        {{ completeness_percent }}%
+                    </div>
+                    <div class="flex-grow-1">
+                        <div class="progress" style="height: 8px;">
+                            <div class="progress-bar" id="completenessBar"
+                                 style="background: {% if completeness_percent >= 80 %}#238636{% elif completeness_percent >= 50 %}#fd7e14{% else %}#da3633{% endif %};"></div>
+                        </div>
+                    </div>
+                </div>
+                {% for item_name, has_it in completeness_items %}
+                <div class="completeness-item">
+                    <span style="color: #8b949e;">{{ item_name }}</span>
+                    {% if has_it %}<i class="fas fa-check-circle check-yes"></i>
+                    {% else %}<i class="fas fa-times-circle check-no"></i>{% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Languages + Chart -->
+    {% if languages %}
+    <div class="row g-3 mb-4 au d4">
+        <div class="col-md-6">
+            <div class="glass-card p-4 h-100">
+                <div class="section-title">💻 Languages Used</div>
+                {% for lang in languages %}<span class="lang-badge">{{ lang }}</span>{% endfor %}
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="glass-card p-4 h-100">
+                <div class="section-title">📊 Language Distribution</div>
+                <canvas id="langChart" height="180"></canvas>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Top Repos -->
+    {% if top_repos %}
+    <div class="mb-4 au d4">
+        <div class="section-title">⭐ Top Repositories</div>
+        <div class="row g-3">
+            {% for repo in top_repos %}
+            <div class="col-md-4">
+                <div class="repo-card">
+                    <div class="repo-name">
+                        <i class="fas fa-book me-1" style="color: #8b949e;"></i>
+                        <a href="{{ repo.html_url }}" target="_blank">{{ repo.name }}</a>
+                    </div>
+                    <div class="repo-desc">
+                        {% if repo.description %}{{ repo.description }}{% else %}<em>No description provided</em>{% endif %}
+                    </div>
+                    <div class="d-flex justify-content-between mt-3">
+                        {% if repo.language %}
+                        <span style="font-size: 11px; color: #8b949e;">
+                            <i class="fas fa-circle" style="font-size: 8px; color: #f0883e;"></i> {{ repo.language }}
+                        </span>
+                        {% endif %}
+                        <span style="font-size: 11px; color: #8b949e;">
+                            <i class="fas fa-star me-1" style="color: #f0883e;"></i>{{ repo.stargazers_count }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- All Repos -->
+    {% if all_repos %}
+    <div class="glass-card mb-4 au d4">
+        <div class="p-4 d-flex justify-content-between align-items-center" style="cursor: pointer;" onclick="toggleRepos()">
+            <div class="section-title mb-0">📁 All Repositories ({{ total_repos }})</div>
+            <i class="fas fa-chevron-down" id="repoChevron" style="color: #8b949e; transition: transform 0.3s;"></i>
+        </div>
+        <div id="allReposSection" style="display: none; overflow-x: auto;">
+            <table class="all-repos-table">
+                <thead>
+                    <tr>
+                        <th>Repository</th>
+                        <th>Language</th>
+                        <th>Stars</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for repo in all_repos %}
+                    <tr>
+                        <td><a href="{{ repo.html_url }}" target="_blank"><i class="fas fa-book me-1" style="color: #8b949e;"></i>{{ repo.name }}</a></td>
+                        <td style="color: #8b949e;">{{ repo.language|default:"-" }}</td>
+                        <td style="color: #f0883e;"><i class="fas fa-star me-1"></i>{{ repo.stargazers_count }}</td>
+                        <td style="color: #8b949e;">{{ repo.description|default:"-"|truncatechars:55 }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Tips -->
+    {% if tips %}
+    <div class="glass-card p-4 mb-4 au d5">
+        <div class="section-title">🎯 Career Tips for Your GitHub</div>
+        {% for tip in tips %}
+        <div class="tip-item">
+            <i class="fas fa-lightbulb" style="color: #238636; margin-top: 2px; flex-shrink: 0;"></i>
+            <span>{{ tip }}</span>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Share -->
+    <div class="glass-card p-4 mb-4 text-center au d5" id="shareSection">
+        <div class="section-title mb-3">🚀 Share & Download</div>
+        <a class="share-btn btn-linkedin"
+           href="https://www.linkedin.com/sharing/share-offsite/?url=https://github.com/{{ username }}"
+           target="_blank">
+            <i class="fab fa-linkedin"></i> LinkedIn
+        </a>
+        <button class="share-btn btn-copy" onclick="copyLink()">
+            <i class="fas fa-link"></i> Copy Link
+        </button>
+        <a class="share-btn btn-lb" href="/leaderboard/">
+            <i class="fas fa-trophy"></i> Leaderboard
+        </a>
+    </div>
+
+    <div class="text-center au d5">
+        <a href="/" class="back-btn">← Search Another User</a>
+    </div>
+
+    {% endif %}
+</div>
+
+<div class="toast-msg" id="toastMsg">✅ Done!</div>
+
+<script>
+    // Score Count-Up
+    const targetScore = {{ score }};
+    const scoreEl = document.getElementById('scoreDisplay');
+    let cur = 0;
+    const timer = setInterval(() => {
+        cur += Math.ceil(targetScore / 60);
+        if (cur >= targetScore) { cur = targetScore; clearInterval(timer); }
+        scoreEl.textContent = cur;
+    }, 1500 / 60);
+
+    // Progress Bars
+    setTimeout(() => {
+        document.getElementById('progressBar').style.width = "{{ score_percent }}%";
+        document.getElementById('completenessBar').style.width = "{{ completeness_percent }}%";
+    }, 400);
+
+    // Language Chart
+    const langData = {{ language_counts|safe }};
+    if (Object.keys(langData).length > 0) {
+        new Chart(document.getElementById('langChart').getContext('2d'), {
+            type: 'doughnut',
+            data: {
+                labels: Object.keys(langData),
+                datasets: [{
+                    data: Object.values(langData),
+                    backgroundColor: ['#58a6ff','#238636','#f0883e','#da3633','#d2a8ff','#79c0ff','#ffa657','#56d364'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                plugins: { legend: { labels: { color: '#e6edf3', font: { size: 11 } } } },
+                cutout: '65%'
+            }
+        });
+    }
+
+    // Toggle Repos
+    function toggleRepos() {
+        const s = document.getElementById('allReposSection');
+        const c = document.getElementById('repoChevron');
+        s.style.display = s.style.display === 'none' ? 'block' : 'none';
+        c.style.transform = s.style.display === 'block' ? 'rotate(180deg)' : 'rotate(0deg)';
+    }
+
+    // Copy Link
+    function copyLink() {
+        navigator.clipboard.writeText(window.location.href).then(() => showToast('✅ Link Copied!'));
+    }
+
+    // Toast
+    function showToast(msg) {
+        const t = document.getElementById('toastMsg');
+        t.textContent = msg;
+        t.classList.add('show');
+        setTimeout(() => t.classList.remove('show'), 2500);
+    }
+
+    // PDF — Clean New Window
+    function downloadPDF() {
+        const html = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>{{ name }} - GitHub Score Card</title>
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', sans-serif; background: white; color: #1a1a1a; padding: 30px; }
+    .header { text-align: center; border-bottom: 3px solid #238636; padding-bottom: 20px; margin-bottom: 24px; }
+    .header h1 { font-size: 22px; color: #238636; }
+    .header p { font-size: 13px; color: #57606a; margin-top: 4px; }
+    .profile { display: flex; align-items: center; gap: 20px; background: #f6f8fa; border: 1px solid #d0d7de; border-radius: 12px; padding: 20px; margin-bottom: 20px; }
+    .avatar { width: 80px; height: 80px; border-radius: 50%; border: 3px solid #238636; }
+    .profile-info h2 { font-size: 20px; font-weight: 700; }
+    .profile-info p { font-size: 13px; color: #57606a; margin-top: 4px; }
+    .score-box { margin-left: auto; text-align: center; background: #238636; color: white; border-radius: 50%; width: 100px; height: 100px; display: flex; flex-direction: column; align-items: center; justify-content: center; flex-shrink: 0; }
+    .score-box .num { font-size: 36px; font-weight: 800; line-height: 1; }
+    .score-box .lbl { font-size: 11px; opacity: 0.85; }
+    .rank { display: inline-block; background: #d1fae5; color: #065f46; border: 1px solid #6ee7b7; border-radius: 50px; padding: 5px 14px; font-size: 13px; font-weight: 600; margin-top: 8px; }
+    .progress-wrap { background: #e5e7eb; border-radius: 10px; height: 10px; margin: 16px 0; }
+    .progress-fill { background: #238636; height: 10px; border-radius: 10px; }
+    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+    .stat { background: #f6f8fa; border: 1px solid #d0d7de; border-radius: 10px; padding: 14px; text-align: center; }
+    .stat .num { font-size: 24px; font-weight: 700; color: #238636; }
+    .stat .lbl { font-size: 11px; color: #57606a; margin-top: 3px; }
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+    .section { background: #f6f8fa; border: 1px solid #d0d7de; border-radius: 10px; padding: 16px; margin-bottom: 16px; }
+    .section-title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: #57606a; margin-bottom: 12px; }
+    .lang-badge { display: inline-block; background: #dbeafe; color: #1e40af; border: 1px solid #93c5fd; border-radius: 50px; padding: 3px 10px; font-size: 12px; margin: 3px; }
+    .repo { background: white; border: 1px solid #d0d7de; border-radius: 8px; padding: 12px; margin-bottom: 8px; }
+    .repo-name { font-weight: 600; color: #0969da; font-size: 14px; }
+    .repo-desc { font-size: 12px; color: #57606a; margin-top: 4px; }
+    .repo-meta { font-size: 11px; color: #57606a; margin-top: 6px; }
+    .tip { display: flex; gap: 10px; background: #f0fdf4; border: 1px solid #86efac; border-radius: 8px; padding: 10px; margin-bottom: 8px; font-size: 13px; }
+    .activity { text-align: center; padding: 10px 0; }
+    .activity .big { font-size: 42px; font-weight: 800; color: #238636; }
+    .complete-row { display: flex; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid #e5e7eb; font-size: 13px; }
+    .complete-row:last-child { border: none; }
+    .check { color: #238636; font-weight: 700; } .cross { color: #dc2626; font-weight: 700; }
+    .footer { text-align: center; margin-top: 20px; font-size: 12px; color: #57606a; border-top: 1px solid #d0d7de; padding-top: 12px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+    <h1>⚡ GitHub Score Card</h1>
+    <p>Generated for @{{ username }}</p>
+</div>
+
+<div class="profile">
+    <img src="{{ avatar }}" class="avatar">
+    <div class="profile-info">
+        <h2>{{ name }}</h2>
+        <p>@{{ username }}</p>
+        {% if bio %}<p>{{ bio }}</p>{% endif %}
+        {% if location %}<p>📍 {{ location }}</p>{% endif %}
+        {% if account_age %}<p>🗓️ GitHub member for {{ account_age }}</p>{% endif %}
+        <div><span class="rank">{{ rank_icon }} {{ rank }}</span></div>
+    </div>
+    <div class="score-box">
+        <div class="num">{{ score }}</div>
+        <div class="lbl">out of 200</div>
+    </div>
+</div>
+
+<div>
+    <div style="font-size:12px;color:#57606a;margin-bottom:6px;">Developer Score Progress</div>
+    <div class="progress-wrap"><div class="progress-fill" style="width:{{ score_percent }}%"></div></div>
+</div>
+
+<div class="stats">
+    <div class="stat"><div class="num">{{ total_repos }}</div><div class="lbl">Total Repos</div></div>
+    <div class="stat"><div class="num" style="color:#2ea043;">{{ original_repos }}</div><div class="lbl">Original</div></div>
+    <div class="stat"><div class="num" style="color:#888;">{{ forked_repos }}</div><div class="lbl">Forked</div></div>
+    <div class="stat"><div class="num" style="color:#f0883e;">{{ total_stars }}</div><div class="lbl">Stars</div></div>
+</div>
+
+<div class="two-col">
+    <div class="section">
+        <div class="section-title">📅 Commit Activity (Last 30 Days)</div>
+        <div class="activity">
+            <div class="big">{{ recent_commits }}</div>
+            <div style="font-size:13px;color:#57606a;">{{ activity_icon }} {{ activity_status }}</div>
+        </div>
+    </div>
+    <div class="section">
+        <div class="section-title">👤 Profile Completeness — {{ completeness_percent }}%</div>
+        <div class="progress-wrap" style="margin-bottom:10px;">
+            <div class="progress-fill" style="width:{{ completeness_percent }}%;"></div>
+        </div>
+        {% for item_name, has_it in completeness_items %}
+        <div class="complete-row">
+            <span>{{ item_name }}</span>
+            <span class="{% if has_it %}check{% else %}cross{% endif %}">{% if has_it %}✓{% else %}✗{% endif %}</span>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+{% if languages %}
+<div class="section">
+    <div class="section-title">💻 Languages Used</div>
+    {% for lang in languages %}<span class="lang-badge">{{ lang }}</span>{% endfor %}
+</div>
+{% endif %}
+
+{% if top_repos %}
+<div class="section-title" style="margin-bottom:10px;">⭐ Top Repositories</div>
+{% for repo in top_repos %}
+<div class="repo">
+    <div class="repo-name">{{ repo.name }}</div>
+    <div class="repo-desc">{% if repo.description %}{{ repo.description }}{% else %}No description provided{% endif %}</div>
+    <div class="repo-meta">{% if repo.language %}{{ repo.language }} · {% endif %}⭐ {{ repo.stargazers_count }}</div>
+</div>
+{% endfor %}
+{% endif %}
+
+{% if tips %}
+<div class="section" style="margin-top:16px;">
+    <div class="section-title">🎯 Career Tips for Your GitHub</div>
+    {% for tip in tips %}
+    <div class="tip">
+        <span style="color:#238636;flex-shrink:0;">💡</span>
+        <span>{{ tip }}</span>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<div class="footer">
+    GitHub Score Card · github.com/{{ username }} · Generated on {% now "d M Y" %}
+</div>
+
+</body>
+</html>`;
+
+        const w = window.open('', '_blank');
+        w.document.write(html);
+        w.document.close();
+        setTimeout(() => w.print(), 800);
+    }
+</script>
+</body>
+</html>

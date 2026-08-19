@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Developer Comparison</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: linear-gradient(135deg, #0d1117 0%, #161b22 100%); min-height: 100vh; font-family: 'Segoe UI', sans-serif; color: #e6edf3; }
+        .glass-card { background: rgba(22,27,34,0.9); border: 1px solid rgba(48,54,61,0.8); border-radius: 16px; padding: 24px; }
+        .user-card { background: rgba(22,27,34,0.9); border: 2px solid rgba(48,54,61,0.8); border-radius: 20px; padding: 28px; text-align: center; transition: border-color 0.3s; }
+        .user-card.winner { border-color: #238636; box-shadow: 0 0 30px rgba(35,134,54,0.2); }
+        .user-card.loser { border-color: rgba(48,54,61,0.4); opacity: 0.85; }
+        .avatar { width: 90px; height: 90px; border-radius: 50%; border: 3px solid #238636; margin-bottom: 12px; }
+        .score-big { font-size: 52px; font-weight: 800; }
+        .rank-badge { display: inline-block; padding: 6px 16px; border-radius: 50px; font-weight: 600; font-size: 13px; margin-top: 8px; }
+        .winner-crown { font-size: 28px; margin-bottom: 8px; }
+        .stat-row { display: flex; align-items: center; margin-bottom: 12px; }
+        .stat-row-label { font-size: 13px; color: #8b949e; width: 140px; text-align: center; flex-shrink: 0; }
+        .stat-val { flex: 1; text-align: center; font-size: 18px; font-weight: 700; padding: 10px; border-radius: 10px; }
+        .stat-val.win { background: rgba(35,134,54,0.15); color: #2ea043; border: 1px solid rgba(35,134,54,0.3); }
+        .stat-val.lose { color: #8b949e; }
+        .stat-val.tie { color: #58a6ff; }
+        .winner-banner { background: linear-gradient(135deg, rgba(35,134,54,0.2), rgba(46,160,67,0.1)); border: 1px solid rgba(35,134,54,0.4); border-radius: 16px; padding: 24px; text-align: center; }
+        .search-input { background: rgba(13,17,23,0.8); border: 1px solid rgba(48,54,61,0.8); border-radius: 10px; color: #e6edf3; padding: 12px 16px; font-size: 14px; width: 100%; outline: none; transition: border-color 0.2s; }
+        .search-input:focus { border-color: #1f6feb; }
+        .search-input::placeholder { color: #484f58; }
+        .search-btn { background: linear-gradient(135deg, #1f6feb, #388bfd); border: none; border-radius: 10px; color: white; padding: 12px; font-size: 14px; font-weight: 600; width: 100%; margin-top: 10px; cursor: pointer; }
+        .back-btn { background: transparent; border: 1px solid rgba(48,54,61,0.8); color: #8b949e; padding: 10px 24px; border-radius: 8px; text-decoration: none; font-size: 13px; transition: all 0.2s; }
+        .back-btn:hover { border-color: #58a6ff; color: #58a6ff; }
+        .vs-badge { background: rgba(88,166,255,0.15); border: 1px solid rgba(88,166,255,0.3); color: #58a6ff; width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 16px; margin: 0 auto; }
+        .lang-badge { display: inline-block; padding: 3px 10px; border-radius: 50px; background: rgba(56,139,253,0.15); border: 1px solid rgba(56,139,253,0.3); color: #58a6ff; font-size: 11px; margin: 2px; }
+    </style>
+</head>
+<body>
+<div class="container py-5">
+
+    <div class="text-center mb-4">
+        <h1 style="font-size: 26px; font-weight: 700;"><i class="fas fa-users me-2"></i>Developer Comparison</h1>
+        <p style="color: #8b949e; font-size: 14px; margin-top: 6px;">Who is the better developer?</p>
+    </div>
+
+    <!-- Search Form -->
+    <div class="glass-card mb-4">
+        <form action="/compare/" method="get">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-5">
+                    <label style="font-size: 12px; color: #8b949e; margin-bottom: 6px; display: block;">FIRST DEVELOPER</label>
+                    <input type="text" name="user1" class="search-input" placeholder="GitHub username..." value="{{ user1_name }}" required>
+                </div>
+                <div class="col-md-2 text-center">
+                    <div class="vs-badge">VS</div>
+                </div>
+                <div class="col-md-5">
+                    <label style="font-size: 12px; color: #8b949e; margin-bottom: 6px; display: block;">SECOND DEVELOPER</label>
+                    <input type="text" name="user2" class="search-input" placeholder="GitHub username..." value="{{ user2_name }}" required>
+                </div>
+            </div>
+            <button type="submit" class="search-btn mt-3"><i class="fas fa-bolt me-2"></i>Compare Now</button>
+        </form>
+    </div>
+
+    {% if user1 and user2 %}
+
+    <!-- Profile Cards -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-5">
+            <div class="user-card {% if user1.score >= user2.score %}winner{% else %}loser{% endif %}">
+                {% if user1.score >= user2.score %}<div class="winner-crown">👑</div>{% endif %}
+                <img src="{{ user1.avatar }}" class="avatar" alt="{{ user1.name }}">
+                <h3 style="font-size: 18px; font-weight: 700;">{{ user1.name }}</h3>
+                <a href="https://github.com/{{ user1.username }}" target="_blank" style="color: #58a6ff; font-size: 12px; text-decoration: none;">@{{ user1.username }}</a>
+                <div class="score-big {% if user1.score >= user2.score %}text-success{% else %}text-secondary{% endif %} mt-3">{{ user1.score }}</div>
+                <div style="font-size: 12px; color: #8b949e;">out of 200</div>
+                <div class="rank-badge" style="background: rgba(35,134,54,0.15); border: 1px solid {{ user1.rank_color }}; color: {{ user1.rank_color }};">{{ user1.rank_icon }} {{ user1.rank }}</div>
+                {% if user1.languages %}
+                <div class="mt-3">{% for lang in user1.languages %}<span class="lang-badge">{{ lang }}</span>{% endfor %}</div>
+                {% endif %}
+            </div>
+        </div>
+        <div class="col-md-2 d-flex align-items-center justify-content-center">
+            <div class="vs-badge" style="width: 60px; height: 60px; font-size: 20px;">VS</div>
+        </div>
+        <div class="col-md-5">
+            <div class="user-card {% if user2.score >= user1.score %}winner{% else %}loser{% endif %}">
+                {% if user2.score >= user1.score %}<div class="winner-crown">👑</div>{% endif %}
+                <img src="{{ user2.avatar }}" class="avatar" alt="{{ user2.name }}">
+                <h3 style="font-size: 18px; font-weight: 700;">{{ user2.name }}</h3>
+                <a href="https://github.com/{{ user2.username }}" target="_blank" style="color: #58a6ff; font-size: 12px; text-decoration: none;">@{{ user2.username }}</a>
+                <div class="score-big {% if user2.score >= user1.score %}text-success{% else %}text-secondary{% endif %} mt-3">{{ user2.score }}</div>
+                <div style="font-size: 12px; color: #8b949e;">out of 200</div>
+                <div class="rank-badge" style="background: rgba(35,134,54,0.15); border: 1px solid {{ user2.rank_color }}; color: {{ user2.rank_color }};">{{ user2.rank_icon }} {{ user2.rank }}</div>
+                {% if user2.languages %}
+                <div class="mt-3">{% for lang in user2.languages %}<span class="lang-badge">{{ lang }}</span>{% endfor %}</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Comparison -->
+    <div class="glass-card mb-4">
+        <h5 style="font-size: 13px; font-weight: 600; color: #8b949e; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 20px;">📊 Head to Head Stats</h5>
+
+        {% with s1=user1.score s2=user2.score %}
+        <div class="stat-row">
+            <div class="stat-val {% if s1 > s2 %}win{% elif s1 < s2 %}lose{% else %}tie{% endif %}">{{ s1 }}</div>
+            <div class="stat-row-label">🏆 Score</div>
+            <div class="stat-val {% if s2 > s1 %}win{% elif s2 < s1 %}lose{% else %}tie{% endif %}">{{ s2 }}</div>
+        </div>
+        {% endwith %}
+
+        <div class="stat-row">
+            <div class="stat-val {% if user1.total_repos > user2.total_repos %}win{% elif user1.total_repos < user2.total_repos %}lose{% else %}tie{% endif %}">{{ user1.total_repos }}</div>
+            <div class="stat-row-label">📁 Repositories</div>
+            <div class="stat-val {% if user2.total_repos > user1.total_repos %}win{% elif user2.total_repos < user1.total_repos %}lose{% else %}tie{% endif %}">{{ user2.total_repos }}</div>
+        </div>
+
+        <div class="stat-row">
+            <div class="stat-val {% if user1.original_repos > user2.original_repos %}win{% elif user1.original_repos < user2.original_repos %}lose{% else %}tie{% endif %}">{{ user1.original_repos }}</div>
+            <div class="stat-row-label">💡 Original</div>
+            <div class="stat-val {% if user2.original_repos > user1.original_repos %}win{% elif user2.original_repos < user1.original_repos %}lose{% else %}tie{% endif %}">{{ user2.original_repos }}</div>
+        </div>
+
+        <div class="stat-row">
+            <div class="stat-val {% if user1.total_stars > user2.total_stars %}win{% elif user1.total_stars < user2.total_stars %}lose{% else %}tie{% endif %}">{{ user1.total_stars }}</div>
+            <div class="stat-row-label">⭐ Stars</div>
+            <div class="stat-val {% if user2.total_stars > user1.total_stars %}win{% elif user2.total_stars < user1.total_stars %}lose{% else %}tie{% endif %}">{{ user2.total_stars }}</div>
+        </div>
+
+        <div class="stat-row">
+            <div class="stat-val {% if user1.languages|length > user2.languages|length %}win{% elif user1.languages|length < user2.languages|length %}lose{% else %}tie{% endif %}">{{ user1.languages|length }}</div>
+            <div class="stat-row-label">💻 Languages</div>
+            <div class="stat-val {% if user2.languages|length > user1.languages|length %}win{% elif user2.languages|length < user1.languages|length %}lose{% else %}tie{% endif %}">{{ user2.languages|length }}</div>
+        </div>
+
+        <div class="stat-row">
+            <div class="stat-val {% if user1.recent_commits > user2.recent_commits %}win{% elif user1.recent_commits < user2.recent_commits %}lose{% else %}tie{% endif %}">{{ user1.recent_commits }}</div>
+            <div class="stat-row-label">🔥 Commits (30d)</div>
+            <div class="stat-val {% if user2.recent_commits > user1.recent_commits %}win{% elif user2.recent_commits < user1.recent_commits %}lose{% else %}tie{% endif %}">{{ user2.recent_commits }}</div>
+        </div>
+
+        <div class="stat-row">
+            <div class="stat-val {% if user1.completeness_percent > user2.completeness_percent %}win{% elif user1.completeness_percent < user2.completeness_percent %}lose{% else %}tie{% endif %}">{{ user1.completeness_percent }}%</div>
+            <div class="stat-row-label">👤 Profile</div>
+            <div class="stat-val {% if user2.completeness_percent > user1.completeness_percent %}win{% elif user2.completeness_percent < user1.completeness_percent %}lose{% else %}tie{% endif %}">{{ user2.completeness_percent }}%</div>
+        </div>
+    </div>
+
+    <!-- Winner Banner -->
+    <div class="winner-banner mb-4">
+        {% if user1.score > user2.score %}
+        <div style="font-size: 40px; margin-bottom: 8px;">🏆</div>
+        <h3 style="font-size: 22px; font-weight: 800; color: #2ea043;">{{ user1.name }} Wins!</h3>
+        <p style="color: #8b949e; font-size: 14px; margin-top: 6px;">{{ user1.score }} vs {{ user2.score }} — Leading by {{ user1.score|add:"-"|add:user2.score }} points</p>
+        {% elif user2.score > user1.score %}
+        <div style="font-size: 40px; margin-bottom: 8px;">🏆</div>
+        <h3 style="font-size: 22px; font-weight: 800; color: #2ea043;">{{ user2.name }} Wins!</h3>
+        <p style="color: #8b949e; font-size: 14px; margin-top: 6px;">{{ user2.score }} vs {{ user1.score }} — Leading by {{ user2.score|add:"-"|add:user1.score }} points</p>
+        {% else %}
+        <div style="font-size: 40px; margin-bottom: 8px;">🤝</div>
+        <h3 style="font-size: 22px; font-weight: 800; color: #58a6ff;">It's a Tie!</h3>
+        <p style="color: #8b949e; font-size: 14px; margin-top: 6px;">Both developers scored {{ user1.score }}/200</p>
+        {% endif %}
+    </div>
+
+    {% endif %}
+
+    <div class="text-center">
+        <a href="/" class="back-btn">← Back to Home</a>
+    </div>
+</div>
+</body>
+</html>
