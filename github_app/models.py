@@ -16,3 +16,12 @@ class LeaderboardEntry(models.Model):
 
     def __str__(self):
         return f"{self.username} - {self.score}"
+
+
+class ScoreHistory(models.Model):
+    username = models.CharField(max_length=100)
+    score = models.IntegerField(default=0)
+    recorded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-recorded_at']
