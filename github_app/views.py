@@ -222,41 +222,61 @@ def calculate_repo_quality(repos):
 
 
 def analyze_events(events):
-    if not isinstance(events, list):
+    if not isinstance(events, list) or len(events) == 0:
         return 0, 0, {}
 
     thirty_days_ago = datetime.now(timezone.utc) - timedelta(days=30)
     recent_commits = 0
     commit_dates = set()
-    monthly_activity = {}
 
+    monthly_activity = {}
     for i in range(5, -1, -1):
-        month = datetime.now() - timedelta(days=30 * i)
+        month = datetime.now(timezone.utc) - timedelta(days=30 * i)
         monthly_activity[month.strftime('%b')] = 0
 
     for event in events:
-        if event.get('type') == 'PushEvent':
-            try:
-                event_date = datetime.strptime(event['created_at'], '%Y-%m-%dT%H:%M:%SZ').replace(tzinfo=timezone.utc)
-                commits = event.get('payload', {}).get('size', 0)
-                if event_date > thirty_days_ago:
-                    recent_commits += commits
-                commit_dates.add(event_date.date())
-                month_key = event_date.strftime('%b')
-                if month_key in monthly_activity:
-                    monthly_activity[month_key] += commits
-            except:
-                pass
+        if event.get('type') != 'PushEvent':
+            continue
+        try:
+            created_at = event.get('created_at', '')
+            if not created_at:
+                continue
 
+            event_date = datetime.strptime(
+                created_at, '%Y-%m-%dT%H:%M:%SZ'
+            ).replace(tzinfo=timezone.utc)
+
+            payload = event.get('payload', {})
+            commits_list = payload.get('commits', [])
+            size = payload.get('size', 0)
+            commits_count = max(len(commits_list), size, 1)
+
+            if event_date > thirty_days_ago:
+                recent_commits += commits_count
+
+            commit_dates.add(event_date.date())
+
+            month_key = event_date.strftime('%b')
+            if month_key in monthly_activity:
+                monthly_activity[month_key] += commits_count
+
+        except Exception as e:
+            print(f"Event error: {e}")
+            continue
+
+    # Streak calculate karo
     streak = 0
     if commit_dates:
         today = datetime.now(timezone.utc).date()
-        current = today
+        yesterday = today - timedelta(days=1)
+
+        start = today if today in commit_dates else yesterday
+        current = start
         while current in commit_dates:
             streak += 1
             current -= timedelta(days=1)
 
-    return min(recent_commits, 100), streak, monthly_activity
+    return recent_commits, streak, monthly_activity
 
 
 def generate_tips(user_data, repos, original_repos, forked_repos, repos_with_desc, recent_commits, languages, total_stars):
