@@ -1,6 +1,8 @@
 import requests
 import json
+import os
 from datetime import datetime, timedelta
+from django.conf import settings
 from django.shortcuts import render
 from .models import LeaderboardEntry
 
@@ -26,7 +28,7 @@ def fetch_github_data(username):
     user_data = user_response.json()
     repos = repos_response.json()
 
-    events = requests.get(events_url).json()
+    events = requests.get(events_url, headers=headers).json()
 
     if not isinstance(repos, list) or 'message' in user_data:
         return None
