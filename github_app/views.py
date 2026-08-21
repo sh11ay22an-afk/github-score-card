@@ -10,8 +10,22 @@ def fetch_github_data(username):
     repos_url = f"https://api.github.com/users/{username}/repos?sort=updated&per_page=100"
     events_url = f"https://api.github.com/users/{username}/events?per_page=100"
 
-    user_data = requests.get(user_url).json()
-    repos = requests.get(repos_url).json()
+    headers = {}
+    github_token = getattr(settings, 'GITHUB_TOKEN', None)
+    if github_token:
+        headers = {'Authorization': f'token {github_token}'}
+
+    user_response = requests.get(user_url, headers=headers)
+    repos_response = requests.get(repos_url, headers=headers)
+
+    if user_response.status_code != 200:
+        return None
+    if repos_response.status_code != 200:
+        return None
+
+    user_data = user_response.json()
+    repos = repos_response.json()
+
     events = requests.get(events_url).json()
 
     if not isinstance(repos, list) or 'message' in user_data:
