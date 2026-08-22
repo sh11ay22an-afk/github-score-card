@@ -3,195 +3,685 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ name }} - GitHub Score Card</title>
+    <title>{{ name }} — GitHub Score Card</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { background: linear-gradient(135deg, #0d1117 0%, #161b22 50%, #0d1117 100%); min-height: 100vh; font-family: 'Segoe UI', sans-serif; color: #e6edf3; }
-        @keyframes fadeInUp { from { opacity: 0; transform: translateY(25px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes scaleIn { from { opacity: 0; transform: scale(0.85); } to { opacity: 1; transform: scale(1); } }
-        @keyframes glowPulse { 0%,100% { box-shadow: 0 0 20px rgba(35,134,54,0.3); } 50% { box-shadow: 0 0 40px rgba(35,134,54,0.6); } }
-        .au { animation: fadeInUp 0.6s ease forwards; }
-        .d1{animation-delay:.1s;opacity:0} .d2{animation-delay:.2s;opacity:0} .d3{animation-delay:.3s;opacity:0} .d4{animation-delay:.4s;opacity:0} .d5{animation-delay:.5s;opacity:0} .d6{animation-delay:.6s;opacity:0}
-        .glass-card { background: rgba(22,27,34,0.85); border: 1px solid rgba(48,54,61,0.8); border-radius: 16px; }
-        .profile-section { background: linear-gradient(135deg, rgba(36,41,47,0.9), rgba(22,27,34,0.9)); border: 1px solid rgba(48,54,61,0.8); border-radius: 20px; padding: 35px; }
-        .avatar { width: 100px; height: 100px; border-radius: 50%; border: 3px solid #238636; animation: glowPulse 2s infinite; }
-        .score-circle { width: 150px; height: 150px; border-radius: 50%; background: linear-gradient(135deg, #238636, #2ea043); display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 0 auto; animation: glowPulse 2s infinite, scaleIn 0.6s ease forwards; }
-        .score-number { font-size: 44px; font-weight: 800; color: white; line-height: 1; }
-        .score-label { font-size: 12px; color: rgba(255,255,255,0.8); }
-        .rank-badge { display: inline-block; padding: 7px 18px; border-radius: 50px; font-weight: 600; font-size: 14px; margin-top: 12px; }
-        .stat-card { background: rgba(22,27,34,0.9); border: 1px solid rgba(48,54,61,0.8); border-radius: 12px; padding: 16px; text-align: center; transition: transform 0.2s, border-color 0.2s; }
-        .stat-card:hover { transform: translateY(-4px); border-color: #238636; }
-        .stat-number { font-size: 26px; font-weight: 700; color: #58a6ff; }
-        .stat-label { font-size: 12px; color: #8b949e; margin-top: 3px; }
-        .progress { height: 10px; border-radius: 10px; background: rgba(48,54,61,0.8); }
-        .progress-bar { background: linear-gradient(90deg, #238636, #2ea043); border-radius: 10px; width: 0%; transition: width 1.5s ease; }
-        .lang-badge { display: inline-block; padding: 5px 13px; border-radius: 50px; background: rgba(56,139,253,0.15); border: 1px solid rgba(56,139,253,0.3); color: #58a6ff; font-size: 12px; margin: 3px; transition: all 0.2s; }
-        .lang-badge:hover { background: rgba(56,139,253,0.3); transform: translateY(-2px); }
-        .tech-badge { display: inline-block; padding: 5px 13px; border-radius: 50px; background: rgba(163,113,247,0.15); border: 1px solid rgba(163,113,247,0.3); color: #a371f7; font-size: 12px; margin: 3px; transition: all 0.2s; }
-        .tech-badge:hover { background: rgba(163,113,247,0.3); transform: translateY(-2px); }
-        .repo-card { background: rgba(22,27,34,0.9); border: 1px solid rgba(48,54,61,0.8); border-radius: 12px; padding: 16px; transition: border-color 0.2s, transform 0.2s; height: 100%; }
-        .repo-card:hover { border-color: #238636; transform: translateY(-4px); }
-        .repo-name a { color: #58a6ff; text-decoration: none; font-weight: 600; font-size: 14px; }
-        .repo-desc { color: #8b949e; font-size: 12px; line-height: 1.5; margin-top: 6px; }
-        .section-title { font-size: 12px; font-weight: 600; color: #8b949e; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 14px; }
-        .tip-item { display: flex; align-items: flex-start; gap: 10px; padding: 11px; border-radius: 10px; background: rgba(35,134,54,0.08); border: 1px solid rgba(35,134,54,0.2); margin-bottom: 8px; font-size: 13px; color: #e6edf3; transition: background 0.2s; }
-        .tip-item:hover { background: rgba(35,134,54,0.15); }
-        .completeness-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid rgba(48,54,61,0.4); font-size: 13px; }
-        .completeness-item:last-child { border-bottom: none; }
-        .check-yes { color: #238636; } .check-no { color: #da3633; }
-        .share-btn { display: inline-flex; align-items: center; gap: 7px; padding: 10px 18px; border-radius: 8px; border: none; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; text-decoration: none; margin: 4px; }
-        .share-btn:hover { transform: translateY(-2px); opacity: 0.9; }
-        .btn-linkedin { background: #0a66c2; color: white; }
-        .btn-copy { background: rgba(48,54,61,0.8); color: #e6edf3; border: 1px solid rgba(48,54,61,0.8); }
-        .btn-copy:hover { border-color: #238636; color: #2ea043; }
-        .btn-lb { background: rgba(88,166,255,0.15); color: #58a6ff; border: 1px solid rgba(88,166,255,0.3); }
-        .back-btn { background: transparent; border: 1px solid rgba(48,54,61,0.8); color: #8b949e; padding: 10px 24px; border-radius: 8px; text-decoration: none; font-size: 13px; transition: all 0.2s; display: inline-block; }
-        .back-btn:hover { border-color: #58a6ff; color: #58a6ff; }
-        .toast-msg { position: fixed; bottom: 30px; right: 30px; background: #238636; color: white; padding: 12px 24px; border-radius: 10px; font-size: 14px; font-weight: 600; opacity: 0; transform: translateY(20px); transition: all 0.3s ease; z-index: 9999; }
+
+        body {
+            background: #060910;
+            min-height: 100vh;
+            font-family: 'Inter', sans-serif;
+            color: #e6edf3;
+            overflow-x: hidden;
+        }
+
+        /* Background */
+        .bg-glow {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+        .bg-glow::before {
+            content: '';
+            position: absolute;
+            top: -10%;
+            right: -10%;
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, rgba(35,134,54,0.08) 0%, transparent 70%);
+        }
+        .bg-glow::after {
+            content: '';
+            position: absolute;
+            bottom: -10%;
+            left: -10%;
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, rgba(56,139,253,0.06) 0%, transparent 70%);
+        }
+
+        .container { position: relative; z-index: 1; }
+
+        /* Animations */
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(24px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes scaleIn {
+            from { opacity: 0; transform: scale(0.8); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        @keyframes countUp { from { opacity: 0; } to { opacity: 1; } }
+
+        .fade-up { animation: fadeUp 0.6s ease forwards; opacity: 0; }
+        .d1{animation-delay:0.05s} .d2{animation-delay:0.15s} .d3{animation-delay:0.25s}
+        .d4{animation-delay:0.35s} .d5{animation-delay:0.45s} .d6{animation-delay:0.55s}
+
+        /* Cards */
+        .card-base {
+            background: rgba(13,17,23,0.7);
+            border: 1px solid rgba(48,54,61,0.6);
+            border-radius: 20px;
+            backdrop-filter: blur(20px);
+        }
+
+        .card-glow {
+            background: rgba(13,17,23,0.7);
+            border: 1px solid rgba(48,54,61,0.6);
+            border-radius: 20px;
+            transition: border-color 0.3s, transform 0.3s;
+        }
+        .card-glow:hover {
+            border-color: rgba(35,134,54,0.4);
+            transform: translateY(-2px);
+        }
+
+        /* Section Label */
+        .section-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: #484f58;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 16px;
+        }
+
+        /* Profile Hero */
+        .profile-hero {
+            background: linear-gradient(135deg, rgba(22,27,34,0.9) 0%, rgba(13,17,23,0.9) 100%);
+            border: 1px solid rgba(48,54,61,0.6);
+            border-radius: 24px;
+            padding: 32px;
+            position: relative;
+            overflow: hidden;
+        }
+        .profile-hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, rgba(35,134,54,0.08) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .avatar-ring {
+            position: relative;
+            display: inline-block;
+        }
+        .avatar-ring::before {
+            content: '';
+            position: absolute;
+            inset: -3px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #238636, #2ea043, #58a6ff);
+            animation: ringRotate 3s linear infinite;
+            z-index: 0;
+        }
+        @keyframes ringRotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .avatar-img {
+            width: 96px;
+            height: 96px;
+            border-radius: 50%;
+            position: relative;
+            z-index: 1;
+            border: 3px solid #060910;
+        }
+
+        /* Score Circle */
+        .score-wrap { position: relative; }
+        .score-circle {
+            width: 156px;
+            height: 156px;
+            border-radius: 50%;
+            background: conic-gradient(
+                #238636 0deg,
+                #2ea043 calc(var(--pct) * 3.6deg),
+                rgba(48,54,61,0.5) calc(var(--pct) * 3.6deg) 360deg
+            );
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto;
+            animation: scaleIn 0.6s ease forwards;
+            position: relative;
+        }
+        .score-circle::before {
+            content: '';
+            position: absolute;
+            inset: 8px;
+            border-radius: 50%;
+            background: #060910;
+        }
+        .score-inner {
+            position: relative;
+            z-index: 1;
+            text-align: center;
+        }
+        .score-num {
+            font-size: 42px;
+            font-weight: 900;
+            color: white;
+            line-height: 1;
+            font-variant-numeric: tabular-nums;
+        }
+        .score-denom {
+            font-size: 12px;
+            color: #8b949e;
+            font-weight: 500;
+        }
+
+        .rank-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 16px;
+            border-radius: 50px;
+            font-size: 13px;
+            font-weight: 600;
+            margin-top: 10px;
+            border: 1px solid;
+        }
+
+        /* Progress */
+        .progress-track {
+            background: rgba(48,54,61,0.5);
+            border-radius: 99px;
+            height: 6px;
+            overflow: hidden;
+            margin-top: 20px;
+        }
+        .progress-fill {
+            height: 100%;
+            border-radius: 99px;
+            background: linear-gradient(90deg, #238636, #2ea043);
+            width: 0%;
+            transition: width 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Stat Cards */
+        .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+        .stat-box {
+            background: rgba(13,17,23,0.7);
+            border: 1px solid rgba(48,54,61,0.6);
+            border-radius: 16px;
+            padding: 18px 12px;
+            text-align: center;
+            transition: all 0.3s;
+        }
+        .stat-box:hover {
+            border-color: rgba(35,134,54,0.4);
+            transform: translateY(-3px);
+            background: rgba(35,134,54,0.05);
+        }
+        .stat-val {
+            font-size: 28px;
+            font-weight: 800;
+            line-height: 1;
+            margin-bottom: 6px;
+        }
+        .stat-lbl {
+            font-size: 11px;
+            color: #484f58;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Streak */
+        .streak-box {
+            background: linear-gradient(135deg, rgba(240,136,62,0.1), rgba(13,17,23,0.9));
+            border: 1px solid rgba(240,136,62,0.3);
+            border-radius: 20px;
+            padding: 24px;
+            text-align: center;
+        }
+        .streak-num {
+            font-size: 56px;
+            font-weight: 900;
+            background: linear-gradient(135deg, #f0883e, #ffa657);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            line-height: 1;
+        }
+
+        /* Activity */
+        .activity-box {
+            background: rgba(13,17,23,0.7);
+            border: 1px solid rgba(48,54,61,0.6);
+            border-radius: 20px;
+            padding: 24px;
+        }
+        .activity-num {
+            font-size: 52px;
+            font-weight: 900;
+            background: linear-gradient(135deg, #58a6ff, #79c0ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            line-height: 1;
+            margin: 12px 0 4px;
+        }
+        .activity-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            border-radius: 50px;
+            font-size: 13px;
+            font-weight: 600;
+            border: 1px solid;
+        }
+
+        /* Completeness */
+        .complete-box {
+            background: rgba(13,17,23,0.7);
+            border: 1px solid rgba(48,54,61,0.6);
+            border-radius: 20px;
+            padding: 24px;
+        }
+        .complete-pct {
+            font-size: 40px;
+            font-weight: 900;
+            line-height: 1;
+        }
+        .complete-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(48,54,61,0.3);
+            font-size: 13px;
+        }
+        .complete-row:last-child { border: none; }
+        .check-yes { color: #2ea043; font-size: 14px; }
+        .check-no { color: #da3633; font-size: 14px; }
+
+        /* Badges */
+        .lang-badge {
+            display: inline-block;
+            padding: 5px 14px;
+            border-radius: 50px;
+            background: rgba(56,139,253,0.12);
+            border: 1px solid rgba(56,139,253,0.25);
+            color: #79c0ff;
+            font-size: 12px;
+            font-weight: 500;
+            margin: 3px;
+            transition: all 0.2s;
+        }
+        .lang-badge:hover { background: rgba(56,139,253,0.22); transform: translateY(-2px); }
+
+        .tech-badge {
+            display: inline-block;
+            padding: 5px 14px;
+            border-radius: 50px;
+            background: rgba(163,113,247,0.12);
+            border: 1px solid rgba(163,113,247,0.25);
+            color: #c9a8f5;
+            font-size: 12px;
+            font-weight: 500;
+            margin: 3px;
+            transition: all 0.2s;
+        }
+        .tech-badge:hover { background: rgba(163,113,247,0.22); transform: translateY(-2px); }
+
+        /* Repos */
+        .repo-card {
+            background: rgba(13,17,23,0.7);
+            border: 1px solid rgba(48,54,61,0.6);
+            border-radius: 16px;
+            padding: 18px;
+            height: 100%;
+            transition: all 0.3s;
+        }
+        .repo-card:hover {
+            border-color: rgba(35,134,54,0.5);
+            transform: translateY(-4px);
+            background: rgba(35,134,54,0.04);
+        }
+        .repo-title { color: #58a6ff; text-decoration: none; font-weight: 600; font-size: 14px; }
+        .repo-title:hover { color: #79c0ff; }
+        .repo-desc { color: #484f58; font-size: 12px; line-height: 1.6; margin-top: 8px; }
+
+        /* Tips */
+        .tip-card {
+            display: flex;
+            gap: 14px;
+            align-items: flex-start;
+            padding: 16px;
+            background: rgba(35,134,54,0.06);
+            border: 1px solid rgba(35,134,54,0.15);
+            border-radius: 14px;
+            margin-bottom: 10px;
+            transition: all 0.2s;
+        }
+        .tip-card:hover { background: rgba(35,134,54,0.1); border-color: rgba(35,134,54,0.3); }
+        .tip-icon {
+            width: 32px;
+            height: 32px;
+            background: rgba(35,134,54,0.2);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            color: #238636;
+            font-size: 14px;
+        }
+        .tip-text { font-size: 13px; color: #8b949e; line-height: 1.6; padding-top: 4px; }
+
+        /* Quality */
+        .quality-wrap {
+            background: rgba(13,17,23,0.7);
+            border: 1px solid rgba(48,54,61,0.6);
+            border-radius: 20px;
+            padding: 24px;
+        }
+        .quality-pct {
+            font-size: 52px;
+            font-weight: 900;
+            line-height: 1;
+        }
+        .quality-bar-track {
+            background: rgba(48,54,61,0.5);
+            border-radius: 99px;
+            height: 8px;
+            overflow: hidden;
+            margin: 12px 0;
+        }
+        .quality-bar-fill {
+            height: 100%;
+            border-radius: 99px;
+            background: linear-gradient(90deg, #238636, #2ea043);
+            width: 0%;
+            transition: width 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Repos Table */
+        .repos-toggle-btn {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            padding: 20px 24px;
+            border-radius: 20px 20px 0 0;
+            transition: background 0.2s;
+        }
+        .repos-toggle-btn:hover { background: rgba(35,134,54,0.05); }
+        .repos-table-wrap { overflow-x: auto; }
+        .repos-table { width: 100%; border-collapse: collapse; }
+        .repos-table th {
+            background: rgba(48,54,61,0.3);
+            color: #484f58;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding: 12px 16px;
+            text-align: left;
+            font-weight: 600;
+        }
+        .repos-table td {
+            padding: 12px 16px;
+            border-bottom: 1px solid rgba(48,54,61,0.3);
+            font-size: 13px;
+            color: #8b949e;
+        }
+        .repos-table tr:last-child td { border: none; }
+        .repos-table tr:hover td { background: rgba(48,54,61,0.2); }
+        .repos-table a { color: #58a6ff; text-decoration: none; font-weight: 500; }
+
+        /* Share Buttons */
+        .action-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 11px 20px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            border: none;
+            font-family: 'Inter', sans-serif;
+        }
+        .action-btn:hover { transform: translateY(-2px); }
+        .btn-li { background: #0a66c2; color: white; }
+        .btn-li:hover { background: #0856a8; color: white; box-shadow: 0 6px 20px rgba(10,102,194,0.4); }
+        .btn-copy { background: rgba(48,54,61,0.7); color: #e6edf3; border: 1px solid rgba(48,54,61,0.8); }
+        .btn-copy:hover { border-color: #238636; color: #2ea043; box-shadow: 0 6px 20px rgba(35,134,54,0.2); }
+        .btn-lb { background: rgba(240,183,62,0.1); color: #f0b73e; border: 1px solid rgba(240,183,62,0.3); }
+        .btn-lb:hover { background: rgba(240,183,62,0.2); box-shadow: 0 6px 20px rgba(240,183,62,0.2); }
+
+        /* Back Button */
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: #484f58;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 500;
+            padding: 10px 0;
+            transition: color 0.2s;
+        }
+        .back-btn:hover { color: #8b949e; }
+
+        /* Toast */
+        .toast-msg {
+            position: fixed;
+            bottom: 28px;
+            right: 28px;
+            background: linear-gradient(135deg, #238636, #2ea043);
+            color: white;
+            padding: 12px 22px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            opacity: 0;
+            transform: translateY(16px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 9999;
+            box-shadow: 0 8px 25px rgba(35,134,54,0.4);
+        }
         .toast-msg.show { opacity: 1; transform: translateY(0); }
-        .all-repos-table { width: 100%; border-collapse: collapse; }
-        .all-repos-table th { background: rgba(48,54,61,0.5); color: #8b949e; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; padding: 11px 14px; text-align: left; }
-        .all-repos-table td { padding: 11px 14px; border-bottom: 1px solid rgba(48,54,61,0.4); font-size: 12px; }
-        .all-repos-table tr:hover td { background: rgba(48,54,61,0.3); }
-        .all-repos-table a { color: #58a6ff; text-decoration: none; }
-        .activity-badge { display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; border-radius: 50px; font-size: 14px; font-weight: 600; }
-        .streak-card { text-align: center; padding: 20px; background: rgba(22,27,34,0.9); border: 1px solid rgba(48,54,61,0.8); border-radius: 12px; }
-        .streak-number { font-size: 48px; font-weight: 800; color: #f0883e; line-height: 1; }
-        .quality-bar { height: 8px; border-radius: 8px; background: rgba(48,54,61,0.5); overflow: hidden; margin-top: 8px; }
-        .quality-fill { height: 8px; border-radius: 8px; background: linear-gradient(90deg, #238636, #2ea043); transition: width 1.5s ease; }
-        @media(max-width:768px) { .profile-section { padding: 20px; } .score-circle { width: 120px; height: 120px; } .score-number { font-size: 36px; } }
+
+        /* Chevron */
+        .chevron { transition: transform 0.3s; color: #484f58; }
+
+        @media(max-width: 768px) {
+            .stat-grid { grid-template-columns: repeat(2, 1fr); }
+            .profile-hero { padding: 20px; }
+            .score-circle { width: 130px; height: 130px; }
+            .score-num { font-size: 36px; }
+        }
     </style>
 </head>
 <body>
-<div class="container py-4">
+
+<div class="bg-glow"></div>
+
+<div class="container py-4" style="max-width: 900px;">
 
     {% if error %}
-    <div class="text-center mt-5">
-        <h2 class="text-danger">User Not Found ❌</h2>
-        <p class="text-muted mt-2">Username "{{ username }}" does not exist on GitHub.</p>
-        <a href="/" class="back-btn mt-3">← Go Back</a>
+    <div class="text-center" style="padding: 80px 20px;">
+        <div style="font-size: 64px; margin-bottom: 16px;">🔍</div>
+        <h2 style="font-size: 22px; font-weight: 700; margin-bottom: 8px;">User Not Found</h2>
+        <p style="color: #484f58; font-size: 15px; margin-bottom: 28px;">
+            GitHub user "{{ username }}" doesn't exist or is unavailable.
+        </p>
+        <a href="/" class="action-btn btn-copy">← Try Another Username</a>
     </div>
     {% else %}
 
-    <div class="text-center mb-4 au d1">
-        <h1 style="font-size: 24px; font-weight: 700;"><i class="fab fa-github me-2"></i>GitHub Score Card</h1>
+    <!-- Page Header -->
+    <div class="d-flex align-items-center justify-content-between mb-4 fade-up d1">
+        <a href="/" class="back-btn">
+            <i class="fas fa-arrow-left"></i> Back
+        </a>
+        <span style="font-size: 12px; color: #484f58; font-weight: 500;">
+            <i class="fab fa-github me-1"></i>GitHub Score Card
+        </span>
     </div>
 
-    <!-- Profile -->
-    <div class="profile-section mb-4 au d2">
+    <!-- Profile Hero -->
+    <div class="profile-hero mb-4 fade-up d1">
         <div class="row align-items-center">
             <div class="col-md-7 mb-4 mb-md-0">
-                <div class="d-flex align-items-center gap-3">
-                    <img src="{{ avatar }}" class="avatar" alt="{{ name }}">
+                <div class="d-flex align-items-center gap-4">
+                    <div class="avatar-ring">
+                        <img src="{{ avatar }}" class="avatar-img" alt="{{ name }}">
+                    </div>
                     <div>
-                        <h2 style="font-size: 20px; font-weight: 700; margin-bottom: 4px;">{{ name }}</h2>
-                        <a href="https://github.com/{{ username }}" target="_blank" style="color: #58a6ff; font-size: 13px; text-decoration: none;"><i class="fab fa-github me-1"></i>@{{ username }}</a>
-                        {% if bio %}<p style="color: #8b949e; font-size: 13px; margin-top: 6px;">{{ bio }}</p>{% endif %}
-                        <div class="d-flex flex-wrap gap-3 mt-2">
-                            {% if location %}<span style="font-size: 12px; color: #8b949e;"><i class="fas fa-map-marker-alt me-1"></i>{{ location }}</span>{% endif %}
-                            {% if account_age %}<span style="font-size: 12px; color: #8b949e;"><i class="fas fa-calendar me-1"></i>Member for {{ account_age }}</span>{% endif %}
-                            {% if website %}<a href="{{ website }}" target="_blank" style="font-size: 12px; color: #58a6ff;"><i class="fas fa-link me-1"></i>Website</a>{% endif %}
+                        <h1 style="font-size: 22px; font-weight: 800; margin-bottom: 4px;">{{ name }}</h1>
+                        <a href="https://github.com/{{ username }}" target="_blank"
+                           style="color: #58a6ff; font-size: 13px; text-decoration: none; font-weight: 500;">
+                            <i class="fab fa-github me-1"></i>@{{ username }}
+                        </a>
+                        {% if bio %}
+                        <p style="color: #8b949e; font-size: 13px; margin-top: 10px; line-height: 1.6;">{{ bio }}</p>
+                        {% endif %}
+                        <div class="d-flex flex-wrap gap-3 mt-3">
+                            {% if location %}
+                            <span style="font-size: 12px; color: #484f58; font-weight: 500;">
+                                <i class="fas fa-map-marker-alt me-1" style="color: #238636;"></i>{{ location }}
+                            </span>
+                            {% endif %}
+                            {% if account_age %}
+                            <span style="font-size: 12px; color: #484f58; font-weight: 500;">
+                                <i class="fas fa-calendar-alt me-1" style="color: #238636;"></i>{{ account_age }} on GitHub
+                            </span>
+                            {% endif %}
+                            {% if website %}
+                            <a href="{{ website }}" target="_blank"
+                               style="font-size: 12px; color: #58a6ff; text-decoration: none; font-weight: 500;">
+                                <i class="fas fa-link me-1"></i>Portfolio
+                            </a>
+                            {% endif %}
                         </div>
                     </div>
                 </div>
             </div>
             <div class="col-md-5 text-center">
-                <div class="score-circle">
-                    <div class="score-number" id="scoreDisplay">0</div>
-                    <div class="score-label">out of 200</div>
+                <div class="score-circle" style="--pct: {{ score_percent }};">
+                    <div class="score-inner">
+                        <div class="score-num" id="scoreDisplay">0</div>
+                        <div class="score-denom">out of 200</div>
+                    </div>
                 </div>
-                <div class="rank-badge" style="background: rgba(35,134,54,0.15); border: 1px solid {{ rank_color }}; color: {{ rank_color }};">{{ rank_icon }} {{ rank }}</div>
+                <div>
+                    <div class="rank-pill" style="border-color: {{ rank_color }}; color: {{ rank_color }}; background: {{ rank_color }}18;">
+                        {{ rank_icon }} {{ rank }}
+                    </div>
+                </div>
             </div>
         </div>
+
+        <!-- Progress -->
         <div class="mt-4">
             <div class="d-flex justify-content-between mb-2">
-                <span style="font-size: 12px; color: #8b949e;">Developer Score Progress</span>
-                <span style="font-size: 12px; color: #8b949e;">{{ score }}/200</span>
+                <span style="font-size: 12px; color: #484f58; font-weight: 500;">Developer Score Progress</span>
+                <span style="font-size: 12px; color: #484f58; font-weight: 600;">{{ score }}/200</span>
             </div>
-            <div class="progress"><div class="progress-bar" id="progressBar"></div></div>
+            <div class="progress-track">
+                <div class="progress-fill" id="progressBar"></div>
+            </div>
         </div>
     </div>
 
-    <!-- Stats -->
-    <div class="row g-3 mb-4 au d3">
-        <div class="col-6 col-md-3">
-            <div class="stat-card">
-                <div class="stat-number">{{ total_repos }}</div>
-                <div class="stat-label"><i class="fas fa-book me-1"></i>Total Repos</div>
-            </div>
+    <!-- Stats Grid -->
+    <div class="stat-grid mb-4 fade-up d2">
+        <div class="stat-box">
+            <div class="stat-val" style="color: #58a6ff;">{{ total_repos }}</div>
+            <div class="stat-lbl">Total Repos</div>
         </div>
-        <div class="col-6 col-md-3">
-            <div class="stat-card">
-                <div class="stat-number" style="color: #2ea043;">{{ original_repos }}</div>
-                <div class="stat-label"><i class="fas fa-code me-1"></i>Original</div>
-            </div>
+        <div class="stat-box">
+            <div class="stat-val" style="color: #2ea043;">{{ original_repos }}</div>
+            <div class="stat-lbl">Original</div>
         </div>
-        <div class="col-6 col-md-3">
-            <div class="stat-card">
-                <div class="stat-number" style="color: #8b949e;">{{ forked_repos }}</div>
-                <div class="stat-label"><i class="fas fa-code-branch me-1"></i>Forked</div>
-            </div>
+        <div class="stat-box">
+            <div class="stat-val" style="color: #484f58;">{{ forked_repos }}</div>
+            <div class="stat-lbl">Forked</div>
         </div>
-        <div class="col-6 col-md-3">
-            <div class="stat-card">
-                <div class="stat-number" style="color: #f0883e;">{{ total_stars }}</div>
-                <div class="stat-label"><i class="fas fa-star me-1"></i>Stars</div>
-            </div>
+        <div class="stat-box">
+            <div class="stat-val" style="color: #f0883e;">{{ total_stars }}</div>
+            <div class="stat-lbl">Stars</div>
         </div>
     </div>
 
     <!-- Streak + Activity + Completeness -->
-    <div class="row g-3 mb-4 au d3">
-
+    <div class="row g-3 mb-4 fade-up d3">
         <!-- Streak -->
         <div class="col-md-3">
-            <div class="streak-card h-100">
-                <div class="section-title">🔥 Current Streak</div>
-                <div class="streak-number">{{ streak }}</div>
-                <div style="font-size: 13px; color: #8b949e; margin-top: 8px;">consecutive days</div>
+            <div class="streak-box h-100 d-flex flex-column align-items-center justify-content-center">
+                <div class="section-label">🔥 Streak</div>
+                <div class="streak-num">{{ streak }}</div>
+                <div style="font-size: 12px; color: #484f58; margin-top: 6px;">consecutive days</div>
                 {% if streak >= 7 %}
-                <div style="font-size: 12px; color: #f0883e; margin-top: 6px;">🏆 On Fire!</div>
+                <div style="font-size: 11px; color: #f0883e; margin-top: 8px; font-weight: 600;">🏆 On Fire!</div>
                 {% elif streak >= 3 %}
-                <div style="font-size: 12px; color: #fd7e14; margin-top: 6px;">⚡ Building momentum!</div>
-                {% elif streak == 0 %}
-                <div style="font-size: 12px; color: #8b949e; margin-top: 6px;">Start coding today!</div>
+                <div style="font-size: 11px; color: #fd7e14; margin-top: 8px; font-weight: 600;">⚡ Building Up!</div>
+                {% else %}
+                <div style="font-size: 11px; color: #484f58; margin-top: 8px;">Keep pushing!</div>
                 {% endif %}
             </div>
         </div>
 
-        <!-- Activity -->
+        <!-- Commit Activity -->
         <div class="col-md-4">
-            <div class="glass-card p-4 h-100">
-                <div class="section-title">📅 Commit Activity (Last 30 Days)</div>
-                <div class="text-center py-2">
-                    <div class="activity-badge" style="background: rgba(35,134,54,0.1); border: 1px solid {{ activity_color }}; color: {{ activity_color }}; display: inline-flex; margin: 0 auto;">
-                        {{ activity_icon }} {{ activity_status }}
-                    </div>
-                    <div style="font-size: 42px; font-weight: 800; color: #58a6ff; margin: 12px 0;">{{ recent_commits }}</div>
-                    <div style="font-size: 13px; color: #8b949e;">commits in last 30 days</div>
+            <div class="activity-box h-100">
+                <div class="section-label">📅 Activity (30 days)</div>
+                <span class="activity-badge"
+                      style="border-color: {{ activity_color }}; color: {{ activity_color }}; background: {{ activity_color }}15;">
+                    {{ activity_icon }} {{ activity_status }}
+                </span>
+                <div class="activity-num">{{ recent_commits }}</div>
+                <div style="font-size: 12px; color: #484f58; font-weight: 500;">commits this month</div>
+                <div style="font-size: 11px; color: #484f58; margin-top: 10px; line-height: 1.6;">
+                    {% if recent_commits >= 30 %}Extremely active! Keep this momentum! 🔥
+                    {% elif recent_commits >= 10 %}Good cadence, stay consistent! ⚡
+                    {% elif recent_commits >= 1 %}Push more often to boost your score 📝
+                    {% else %}No recent commits — start coding today! 😴{% endif %}
                 </div>
             </div>
         </div>
 
         <!-- Profile Completeness -->
         <div class="col-md-5">
-            <div class="glass-card p-4 h-100">
-                <div class="section-title">👤 Profile Completeness</div>
+            <div class="complete-box h-100">
+                <div class="section-label">👤 Profile Completeness</div>
                 <div class="d-flex align-items-center gap-3 mb-3">
-                    <div style="font-size: 36px; font-weight: 800; color: {% if completeness_percent >= 80 %}#238636{% elif completeness_percent >= 50 %}#fd7e14{% else %}#da3633{% endif %};">{{ completeness_percent }}%</div>
+                    <div class="complete-pct"
+                         style="color: {% if completeness_percent >= 80 %}#2ea043{% elif completeness_percent >= 50 %}#fd7e14{% else %}#da3633{% endif %};">
+                        {{ completeness_percent }}%
+                    </div>
                     <div class="flex-grow-1">
-                        <div class="progress" style="height: 8px;">
-                            <div class="progress-bar" id="completenessBar" style="background: {% if completeness_percent >= 80 %}#238636{% elif completeness_percent >= 50 %}#fd7e14{% else %}#da3633{% endif %};"></div>
+                        <div class="progress-track" style="height: 6px;">
+                            <div class="progress-fill" id="completenessBar"
+                                 style="background: {% if completeness_percent >= 80 %}#238636{% elif completeness_percent >= 50 %}#fd7e14{% else %}#da3633{% endif %};"></div>
                         </div>
                     </div>
                 </div>
                 {% for item_name, has_it in completeness_items %}
-                <div class="completeness-item">
-                    <span style="color: #8b949e;">{{ item_name }}</span>
-                    {% if has_it %}<i class="fas fa-check-circle check-yes"></i>{% else %}<i class="fas fa-times-circle check-no"></i>{% endif %}
+                <div class="complete-row">
+                    <span style="color: #8b949e; font-size: 13px;">{{ item_name }}</span>
+                    {% if has_it %}
+                    <i class="fas fa-check-circle check-yes"></i>
+                    {% else %}
+                    <i class="fas fa-times-circle check-no"></i>
+                    {% endif %}
                 </div>
                 {% endfor %}
             </div>
@@ -199,48 +689,53 @@
     </div>
 
     <!-- Contribution Graph -->
-    <div class="glass-card p-4 mb-4 au d4">
-        <div class="section-title">📊 Contribution Graph (Last 6 Months)</div>
-        <canvas id="contributionChart" height="80"></canvas>
+    <div class="card-base p-4 mb-4 fade-up d3">
+        <div class="section-label">📊 Contribution Graph — Last 6 Months</div>
+        <canvas id="contributionChart" height="70"></canvas>
     </div>
 
-    <!-- Tech Stack + Language Chart -->
-    <div class="row g-3 mb-4 au d4">
+    <!-- Tech Stack + Languages -->
+    <div class="row g-3 mb-4 fade-up d4">
         <div class="col-md-6">
-            <div class="glass-card p-4 h-100">
-                <div class="section-title">🛠️ Tech Stack</div>
+            <div class="card-base p-4 h-100">
+                <div class="section-label">🛠️ Tech Stack Detected</div>
+                {% if tech_stack %}
                 {% for tech in tech_stack %}
                 <span class="tech-badge">{{ tech }}</span>
                 {% endfor %}
+                {% else %}
+                <p style="color: #484f58; font-size: 13px;">No specific frameworks detected yet.</p>
+                {% endif %}
             </div>
         </div>
         <div class="col-md-6">
-            <div class="glass-card p-4 h-100">
-                <div class="section-title">📊 Language Distribution</div>
-                <canvas id="langChart" height="180"></canvas>
+            <div class="card-base p-4 h-100">
+                <div class="section-label">💻 Language Distribution</div>
+                <canvas id="langChart" height="190"></canvas>
             </div>
         </div>
     </div>
 
     <!-- Repository Quality -->
-    <div class="glass-card p-4 mb-4 au d4">
-        <div class="section-title">⭐ Repository Quality Score</div>
+    <div class="quality-wrap mb-4 fade-up d4">
         <div class="row align-items-center">
             <div class="col-md-3 text-center">
-                <div style="font-size: 48px; font-weight: 800; color: {% if quality_data.quality_percent >= 70 %}#238636{% elif quality_data.quality_percent >= 40 %}#fd7e14{% else %}#da3633{% endif %};">
+                <div class="section-label">⭐ Repo Quality</div>
+                <div class="quality-pct"
+                     style="color: {% if quality_data.quality_percent >= 70 %}#2ea043{% elif quality_data.quality_percent >= 40 %}#fd7e14{% else %}#da3633{% endif %};">
                     {{ quality_data.quality_percent }}%
                 </div>
-                <div style="font-size: 13px; color: #8b949e;">Quality Score</div>
             </div>
             <div class="col-md-9">
                 <div style="font-size: 13px; color: #8b949e; margin-bottom: 8px;">
-                    {{ quality_data.quality_repos }} out of {{ quality_data.total_repos }} repos have quality documentation
+                    <strong style="color: #e6edf3;">{{ quality_data.quality_repos }}</strong> out of
+                    <strong style="color: #e6edf3;">{{ quality_data.total_repos }}</strong> repos have quality documentation
                 </div>
-                <div class="quality-bar">
-                    <div class="quality-fill" id="qualityBar"></div>
+                <div class="quality-bar-track">
+                    <div class="quality-bar-fill" id="qualityBar"></div>
                 </div>
-                <div style="font-size: 12px; color: #8b949e; margin-top: 10px;">
-                    A quality repo has: ✅ Description &nbsp; ✅ License &nbsp; ✅ Topics/Tags
+                <div style="font-size: 11px; color: #484f58; margin-top: 8px;">
+                    Quality = Has description + license or topics tags
                 </div>
             </div>
         </div>
@@ -248,62 +743,68 @@
 
     <!-- Score History -->
     {% if score_history_list %}
-    <div class="glass-card p-4 mb-4 au d4">
-        <div class="section-title">📈 Score History</div>
-
+    <div class="card-base p-4 mb-4 fade-up d4">
+        <div class="section-label">📈 Score History</div>
         {% if score_history_list|length == 1 %}
-        <!-- Single Entry — Show attractive card -->
-        <div class="text-center py-3">
-            <div style="font-size: 13px; color: #8b949e; margin-bottom: 16px;">
-                First time analyzing this profile! Come back later to track progress over time.
+        <div class="d-flex align-items-center gap-4" style="background: rgba(35,134,54,0.06); border: 1px solid rgba(35,134,54,0.15); border-radius: 16px; padding: 24px;">
+            <div style="text-align: center;">
+                <div style="font-size: 11px; color: #484f58; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px;">First Score</div>
+                <div style="font-size: 48px; font-weight: 900; color: #238636; line-height: 1;">{{ score }}</div>
+                <div style="font-size: 11px; color: #484f58;">out of 200</div>
             </div>
-            <div style="display: inline-flex; align-items: center; gap: 16px; background: rgba(35,134,54,0.1); border: 1px solid rgba(35,134,54,0.3); border-radius: 16px; padding: 20px 32px;">
-                <div>
-                    <div style="font-size: 11px; color: #8b949e; text-transform: uppercase; letter-spacing: 1px;">Current Score</div>
-                    <div style="font-size: 52px; font-weight: 800; color: #238636; line-height: 1;">{{ score_history_list.0.score }}</div>
-                    <div style="font-size: 12px; color: #8b949e;">out of 200</div>
-                </div>
-                <div style="text-align: left;">
-                    <div style="font-size: 13px; color: #8b949e;">First recorded</div>
-                    <div style="font-size: 14px; font-weight: 600; color: #e6edf3; margin-top: 4px;">{{ score_history_list.0.date }}</div>
-                    <div style="font-size: 12px; color: #fd7e14; margin-top: 8px;">📊 Search again to track progress!</div>
+            <div>
+                <div style="font-size: 14px; color: #8b949e; line-height: 1.6;">
+                    This is your first analysis!<br>
+                    Search again later to track how the score changes over time. 📊
                 </div>
             </div>
         </div>
         {% else %}
-        <!-- Multiple Entries — Show chart + stats -->
         <div class="row g-3 mb-3">
             <div class="col-4 text-center">
-                <div style="font-size: 11px; color: #8b949e; text-transform: uppercase; letter-spacing: 1px;">First Score</div>
-                <div style="font-size: 28px; font-weight: 800; color: #8b949e;">{{ score_history_list.0.score }}</div>
+                <div style="font-size: 11px; color: #484f58; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px;">First</div>
+                <div style="font-size: 24px; font-weight: 800; color: #484f58;">{{ score_history_list.0.score }}</div>
             </div>
             <div class="col-4 text-center">
-                <div style="font-size: 11px; color: #8b949e; text-transform: uppercase; letter-spacing: 1px;">Current Score</div>
-                <div style="font-size: 28px; font-weight: 800; color: #238636;">{{ score }}</div>
+                <div style="font-size: 11px; color: #484f58; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px;">Current</div>
+                <div style="font-size: 24px; font-weight: 800; color: #238636;">{{ score }}</div>
             </div>
             <div class="col-4 text-center">
-                <div style="font-size: 11px; color: #8b949e; text-transform: uppercase; letter-spacing: 1px;">Searches</div>
-                <div style="font-size: 28px; font-weight: 800; color: #58a6ff;">{{ score_history_list|length }}</div>
+                <div style="font-size: 11px; color: #484f58; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px;">Searches</div>
+                <div style="font-size: 24px; font-weight: 800; color: #58a6ff;">{{ score_history_list|length }}</div>
             </div>
         </div>
-        <canvas id="historyChart" height="100"></canvas>
+        <canvas id="historyChart" height="90"></canvas>
         {% endif %}
     </div>
     {% endif %}
 
     <!-- Top Repos -->
     {% if top_repos %}
-    <div class="mb-4 au d5">
-        <div class="section-title">🏆 Top Repositories</div>
+    <div class="mb-4 fade-up d5">
+        <div class="section-label mb-3">🏆 Top Repositories</div>
         <div class="row g-3">
             {% for repo in top_repos %}
             <div class="col-md-4">
                 <div class="repo-card">
-                    <div class="repo-name"><i class="fas fa-book me-1" style="color: #8b949e;"></i><a href="{{ repo.html_url }}" target="_blank">{{ repo.name }}</a></div>
-                    <div class="repo-desc">{% if repo.description %}{{ repo.description }}{% else %}<em>No description provided</em>{% endif %}</div>
-                    <div class="d-flex justify-content-between mt-3">
-                        {% if repo.language %}<span style="font-size: 11px; color: #8b949e;"><i class="fas fa-circle" style="font-size: 8px; color: #f0883e;"></i> {{ repo.language }}</span>{% endif %}
-                        <span style="font-size: 11px; color: #8b949e;"><i class="fas fa-star me-1" style="color: #f0883e;"></i>{{ repo.stargazers_count }}</span>
+                    <div class="d-flex align-items-start justify-content-between gap-2 mb-2">
+                        <i class="fas fa-book" style="color: #484f58; font-size: 13px; margin-top: 2px; flex-shrink: 0;"></i>
+                        <a href="{{ repo.html_url }}" target="_blank" class="repo-title flex-grow-1">{{ repo.name }}</a>
+                    </div>
+                    <div class="repo-desc">
+                        {% if repo.description %}{{ repo.description }}
+                        {% else %}<em>No description yet</em>{% endif %}
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mt-3">
+                        {% if repo.language %}
+                        <span style="font-size: 11px; color: #484f58; font-weight: 500;">
+                            <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #f0883e; margin-right: 4px;"></span>
+                            {{ repo.language }}
+                        </span>
+                        {% endif %}
+                        <span style="font-size: 11px; color: #484f58; font-weight: 500;">
+                            <i class="fas fa-star me-1" style="color: #f0883e;"></i>{{ repo.stargazers_count }}
+                        </span>
                     </div>
                 </div>
             </div>
@@ -314,68 +815,94 @@
 
     <!-- All Repos -->
     {% if all_repos %}
-    <div class="glass-card mb-4 au d5">
-        <div class="p-4 d-flex justify-content-between align-items-center" style="cursor: pointer;" onclick="toggleRepos()">
-            <div class="section-title mb-0">📁 All Repositories ({{ total_repos }})</div>
-            <i class="fas fa-chevron-down" id="repoChevron" style="color: #8b949e; transition: transform 0.3s;"></i>
+    <div class="card-base mb-4 fade-up d5">
+        <div class="repos-toggle-btn" onclick="toggleRepos()">
+            <div class="section-label mb-0">📁 All Repositories
+                <span style="color: #58a6ff; margin-left: 8px;">{{ total_repos }}</span>
+            </div>
+            <i class="fas fa-chevron-down chevron" id="repoChevron"></i>
         </div>
-        <div id="allReposSection" style="display: none; overflow-x: auto;">
-            <table class="all-repos-table">
-                <thead><tr><th>Repository</th><th>Language</th><th>Stars</th><th>Description</th></tr></thead>
-                <tbody>
-                    {% for repo in all_repos %}
-                    <tr>
-                        <td><a href="{{ repo.html_url }}" target="_blank"><i class="fas fa-book me-1" style="color: #8b949e;"></i>{{ repo.name }}</a></td>
-                        <td style="color: #8b949e;">{{ repo.language|default:"-" }}</td>
-                        <td style="color: #f0883e;"><i class="fas fa-star me-1"></i>{{ repo.stargazers_count }}</td>
-                        <td style="color: #8b949e;">{{ repo.description|default:"-"|truncatechars:55 }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+        <div id="allReposSection" style="display: none;">
+            <div class="repos-table-wrap">
+                <table class="repos-table">
+                    <thead>
+                        <tr>
+                            <th>Repository</th>
+                            <th>Language</th>
+                            <th>Stars</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for repo in all_repos %}
+                        <tr>
+                            <td><a href="{{ repo.html_url }}" target="_blank">{{ repo.name }}</a></td>
+                            <td>{{ repo.language|default:"—" }}</td>
+                            <td style="color: #f0883e;">⭐ {{ repo.stargazers_count }}</td>
+                            <td>{{ repo.description|default:"—"|truncatechars:55 }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
     {% endif %}
 
-    <!-- Tips -->
+    <!-- Career Tips -->
     {% if tips %}
-    <div class="glass-card p-4 mb-4 au d5">
-        <div class="section-title">🎯 Career Tips for Your GitHub</div>
+    <div class="card-base p-4 mb-4 fade-up d5">
+        <div class="section-label">🎯 Personalized Career Tips</div>
         {% for tip in tips %}
-        <div class="tip-item">
-            <i class="fas fa-lightbulb" style="color: #238636; margin-top: 2px; flex-shrink: 0;"></i>
-            <span>{{ tip }}</span>
+        <div class="tip-card">
+            <div class="tip-icon"><i class="fas fa-lightbulb"></i></div>
+            <div class="tip-text">{{ tip }}</div>
         </div>
         {% endfor %}
     </div>
     {% endif %}
 
-    <!-- Share -->
-    <div class="glass-card p-4 mb-4 text-center au d6" id="shareSection">
-        <div class="section-title mb-3">🚀 Share & More</div>
-        <a class="share-btn btn-linkedin" href="https://www.linkedin.com/sharing/share-offsite/?url=https://github.com/{{ username }}" target="_blank"><i class="fab fa-linkedin"></i> LinkedIn</a>
-        <button class="share-btn btn-copy" onclick="copyLink()"><i class="fas fa-link"></i> Copy Link</button>
-        <a class="share-btn btn-lb" href="/leaderboard/"><i class="fas fa-trophy"></i> Leaderboard</a>
+    <!-- Actions -->
+    <div class="card-base p-4 mb-4 fade-up d6">
+        <div class="section-label mb-3">🚀 Share & More</div>
+        <div class="d-flex flex-wrap gap-2">
+            <a class="action-btn btn-li"
+               href="https://www.linkedin.com/sharing/share-offsite/?url=https://github.com/{{ username }}"
+               target="_blank">
+                <i class="fab fa-linkedin"></i> Share on LinkedIn
+            </a>
+            <button class="action-btn btn-copy" onclick="copyLink()">
+                <i class="fas fa-link"></i> Copy Link
+            </button>
+            <a class="action-btn btn-lb" href="/leaderboard/">
+                <i class="fas fa-trophy"></i> My Leaderboard
+            </a>
+        </div>
     </div>
 
-    <div class="text-center au d6">
-        <a href="/" class="back-btn">← Search Another User</a>
+    <div class="text-center fade-up d6">
+        <a href="/" class="back-btn">
+            <i class="fas fa-arrow-left"></i> Search Another User
+        </a>
     </div>
+
     {% endif %}
 </div>
 
-<div class="toast-msg" id="toastMsg">✅ Done!</div>
+<div class="toast-msg" id="toastMsg">✅ Link Copied!</div>
 
 <script>
     // Score Count-Up
     const targetScore = {{ score }};
     const scoreEl = document.getElementById('scoreDisplay');
     let cur = 0;
-    const timer = setInterval(() => {
-        cur += Math.ceil(targetScore / 60);
-        if (cur >= targetScore) { cur = targetScore; clearInterval(timer); }
-        scoreEl.textContent = cur;
-    }, 1500 / 60);
+    const steps = 60;
+    const inc = targetScore / steps;
+    const t = setInterval(() => {
+        cur += inc;
+        if (cur >= targetScore) { cur = targetScore; clearInterval(t); }
+        scoreEl.textContent = Math.floor(cur);
+    }, 1500 / steps);
 
     // Progress Bars
     setTimeout(() => {
@@ -391,32 +918,56 @@
             type: 'doughnut',
             data: {
                 labels: Object.keys(langData),
-                datasets: [{ data: Object.values(langData), backgroundColor: ['#58a6ff','#238636','#f0883e','#da3633','#d2a8ff','#79c0ff','#ffa657','#56d364'], borderWidth: 0 }]
+                datasets: [{
+                    data: Object.values(langData),
+                    backgroundColor: ['#58a6ff','#238636','#f0883e','#da3633','#c9a8f5','#79c0ff','#ffa657','#56d364','#ff7b72','#d2a8ff'],
+                    borderWidth: 0,
+                    hoverOffset: 6
+                }]
             },
-            options: { plugins: { legend: { labels: { color: '#e6edf3', font: { size: 11 } } } }, cutout: '65%' }
+            options: {
+                plugins: {
+                    legend: { labels: { color: '#8b949e', font: { size: 11, family: 'Inter' }, padding: 12, boxWidth: 10 } }
+                },
+                cutout: '68%'
+            }
         });
     }
 
-    // Contribution Graph
+    // Contribution Chart
     const monthlyData = {{ monthly_activity|safe }};
     new Chart(document.getElementById('contributionChart').getContext('2d'), {
         type: 'bar',
         data: {
             labels: Object.keys(monthlyData),
             datasets: [{
-                label: 'Commits',
                 data: Object.values(monthlyData),
-                backgroundColor: 'rgba(35,134,54,0.7)',
+                backgroundColor: (ctx) => {
+                    const max = Math.max(...Object.values(monthlyData));
+                    const val = ctx.raw;
+                    const alpha = max > 0 ? 0.3 + (val / max) * 0.7 : 0.3;
+                    return `rgba(35,134,54,${alpha})`;
+                },
                 borderColor: '#238636',
                 borderWidth: 1,
-                borderRadius: 6,
+                borderRadius: 8,
+                borderSkipped: false,
             }]
         },
         options: {
-            plugins: { legend: { display: false } },
+            plugins: { legend: { display: false }, tooltip: {
+                callbacks: { label: (ctx) => ` ${ctx.raw} commits` }
+            }},
             scales: {
-                x: { ticks: { color: '#8b949e' }, grid: { color: 'rgba(48,54,61,0.4)' } },
-                y: { ticks: { color: '#8b949e' }, grid: { color: 'rgba(48,54,61,0.4)' }, beginAtZero: true }
+                x: {
+                    ticks: { color: '#484f58', font: { size: 12, family: 'Inter', weight: '500' } },
+                    grid: { display: false }
+                },
+                y: {
+                    ticks: { color: '#484f58', font: { size: 11, family: 'Inter' } },
+                    grid: { color: 'rgba(48,54,61,0.3)' },
+                    beginAtZero: true
+                }
             }
         }
     });
@@ -429,15 +980,20 @@
             data: {
                 labels: scoreHistoryRaw.map(h => h.date),
                 datasets: [{
-                    label: 'Score',
                     data: scoreHistoryRaw.map(h => h.score),
                     borderColor: '#238636',
-                    backgroundColor: 'rgba(35,134,54,0.15)',
+                    backgroundColor: (ctx) => {
+                        const gradient = ctx.chart.ctx.createLinearGradient(0, 0, 0, 200);
+                        gradient.addColorStop(0, 'rgba(35,134,54,0.2)');
+                        gradient.addColorStop(1, 'rgba(35,134,54,0)');
+                        return gradient;
+                    },
                     borderWidth: 2.5,
                     pointBackgroundColor: '#238636',
-                    pointBorderColor: '#0d1117',
-                    pointBorderWidth: 2,
+                    pointBorderColor: '#060910',
+                    pointBorderWidth: 2.5,
                     pointRadius: 5,
+                    pointHoverRadius: 7,
                     fill: true,
                     tension: 0.4
                 }]
@@ -445,8 +1001,15 @@
             options: {
                 plugins: { legend: { display: false } },
                 scales: {
-                    x: { ticks: { color: '#8b949e', font: { size: 11 } }, grid: { color: 'rgba(48,54,61,0.4)' } },
-                    y: { ticks: { color: '#8b949e', font: { size: 11 } }, grid: { color: 'rgba(48,54,61,0.4)' }, min: 0, max: 200 }
+                    x: {
+                        ticks: { color: '#484f58', font: { size: 11, family: 'Inter' } },
+                        grid: { color: 'rgba(48,54,61,0.3)' }
+                    },
+                    y: {
+                        ticks: { color: '#484f58', font: { size: 11, family: 'Inter' } },
+                        grid: { color: 'rgba(48,54,61,0.3)' },
+                        min: 0, max: 200
+                    }
                 }
             }
         });
@@ -456,20 +1019,18 @@
     function toggleRepos() {
         const s = document.getElementById('allReposSection');
         const c = document.getElementById('repoChevron');
-        s.style.display = s.style.display === 'none' ? 'block' : 'none';
-        c.style.transform = s.style.display === 'block' ? 'rotate(180deg)' : 'rotate(0deg)';
+        const open = s.style.display === 'none';
+        s.style.display = open ? 'block' : 'none';
+        c.style.transform = open ? 'rotate(180deg)' : 'rotate(0deg)';
     }
 
     // Copy Link
     function copyLink() {
-        navigator.clipboard.writeText(window.location.href).then(() => showToast('✅ Link Copied!'));
-    }
-
-    function showToast(msg) {
-        const t = document.getElementById('toastMsg');
-        t.textContent = msg;
-        t.classList.add('show');
-        setTimeout(() => t.classList.remove('show'), 2500);
+        navigator.clipboard.writeText(window.location.href).then(() => {
+            const t = document.getElementById('toastMsg');
+            t.classList.add('show');
+            setTimeout(() => t.classList.remove('show'), 2500);
+        });
     }
 </script>
 </body>
