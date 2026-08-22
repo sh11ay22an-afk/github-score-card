@@ -1,100 +1,138 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GitHub Score Leaderboard</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            background: linear-gradient(135deg, #0d1117 0%, #161b22 100%);
-            min-height: 100vh;
-            font-family: 'Segoe UI', sans-serif;
-            color: #e6edf3;
-        }
-        .leaderboard-card {
-            background: rgba(22,27,34,0.9);
-            border: 1px solid rgba(48,54,61,0.8);
-            border-radius: 16px;
-            overflow: hidden;
-        }
-        .lb-row {
-            display: flex; align-items: center;
-            padding: 16px 20px;
-            border-bottom: 1px solid rgba(48,54,61,0.5);
-            transition: background 0.2s;
-        }
-        .lb-row:hover { background: rgba(48,54,61,0.4); }
-        .lb-rank { font-size: 18px; font-weight: 700; width: 40px; color: #8b949e; }
-        .lb-rank.gold { color: #ffd700; }
-        .lb-rank.silver { color: #c0c0c0; }
-        .lb-rank.bronze { color: #cd7f32; }
-        .lb-avatar { width: 44px; height: 44px; border-radius: 50%; margin: 0 14px; border: 2px solid rgba(48,54,61,0.8); }
-        .lb-name { font-weight: 600; font-size: 15px; }
-        .lb-username { font-size: 12px; color: #58a6ff; }
-        .lb-score {
-            margin-left: auto;
-            background: linear-gradient(135deg, #238636, #2ea043);
-            padding: 6px 16px;
-            border-radius: 50px;
-            font-weight: 700;
-            font-size: 15px;
-        }
-        .lb-rank-badge {
-            font-size: 12px; color: #8b949e;
-            margin-left: 12px; display: none;
-        }
-        @media (min-width: 576px) { .lb-rank-badge { display: block; } }
-        .back-btn {
-            background: transparent; border: 1px solid rgba(48,54,61,0.8);
-            color: #8b949e; padding: 10px 24px;
-            border-radius: 8px; text-decoration: none;
-            font-size: 14px; transition: all 0.2s;
-        }
-        .back-btn:hover { border-color: #58a6ff; color: #58a6ff; }
-    </style>
-</head>
-<body>
-<div class="container py-5">
-    <div class="text-center mb-4">
-        <h1 style="font-size: 26px; font-weight: 700;">
-            <i class="fas fa-trophy me-2" style="color: #ffd700;"></i>Developer Leaderboard
-        </h1>
-        <p style="color: #8b949e; font-size: 14px; margin-top: 6px;">Top developers ranked by GitHub Score</p>
-    </div>
+{% extends "base.html" %}
+{% block title %}Developer Leaderboard — GitHub Score Card{% endblock %}
+{% block nav_leaderboard %}active{% endblock %}
 
-    <div class="leaderboard-card mb-4">
-        {% if entries %}
-            {% for entry in entries %}
-            <div class="lb-row">
-                <div class="lb-rank {% if forloop.counter == 1 %}gold{% elif forloop.counter == 2 %}silver{% elif forloop.counter == 3 %}bronze{% endif %}">
-                    {% if forloop.counter == 1 %}🥇
-                    {% elif forloop.counter == 2 %}🥈
-                    {% elif forloop.counter == 3 %}🥉
-                    {% else %}#{{ forloop.counter }}{% endif %}
-                </div>
-                <img src="{{ entry.avatar }}" class="lb-avatar" alt="{{ entry.name }}">
-                <div>
-                    <div class="lb-name">{{ entry.name }}</div>
-                    <div class="lb-username">@{{ entry.username }}</div>
-                </div>
-                <div class="lb-rank-badge">{{ entry.rank_icon }} {{ entry.rank }}</div>
-                <div class="lb-score">{{ entry.score }}/200</div>
-            </div>
-            {% endfor %}
-        {% else %}
-            <div class="text-center p-5" style="color: #8b949e;">
-                <i class="fas fa-trophy" style="font-size: 40px; margin-bottom: 12px; opacity: 0.3;"></i>
-                <p>No entries yet — search a GitHub username to get started!</p>
-            </div>
-        {% endif %}
-    </div>
+{% block extra_head %}
+<style>
+.lb-wrap{max-width:800px;margin:0 auto;padding:32px 18px 60px;}
+.lb-hd{margin-bottom:24px;}
+.lb-h1{font-size:24px;font-weight:800;letter-spacing:-0.5px;margin-bottom:5px;}
+.lb-sub{color:var(--t3);font-size:13px;}
 
-    <div class="text-center">
-        <a href="/" class="back-btn">← Search GitHub User</a>
-    </div>
+/* Info box */
+.lb-info{
+    background:rgba(46,160,67,0.05);border:1px solid rgba(46,160,67,0.15);
+    border-radius:var(--r-lg);padding:12px 16px;font-size:13px;color:var(--t2);
+    margin-bottom:22px;display:flex;align-items:center;gap:9px;
+}
+.lb-info i{color:var(--green);flex-shrink:0;}
+
+/* List card */
+.lb-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r-xl);overflow:hidden;margin-bottom:18px;}
+.lb-item{
+    display:flex;align-items:center;gap:12px;
+    padding:14px 18px;border-bottom:1px solid rgba(37,45,56,0.4);
+    transition:background 0.15s;text-decoration:none;color:inherit;
+}
+.lb-item:last-child{border-bottom:none;}
+.lb-item:hover{background:rgba(37,45,56,0.3);}
+
+.lb-rank-col{
+    font-size:16px;font-weight:700;color:var(--t3);
+    width:44px;text-align:center;flex-shrink:0;
+}
+.lb-av{width:44px;height:44px;border-radius:50%;border:2px solid var(--border);flex-shrink:0;}
+.lb-info-col{flex:1;min-width:0;}
+.lb-name{font-size:14px;font-weight:600;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.lb-user{font-size:11px;color:var(--blue);margin-top:1px;}
+.lb-rank-badge-s{
+    display:none;font-size:11px;color:var(--t3);
+    margin-left:auto;margin-right:10px;white-space:nowrap;flex-shrink:0;
+}
+@media(min-width:576px){.lb-rank-badge-s{display:block;}}
+.lb-sc-col{display:flex;flex-direction:column;align-items:flex-end;flex-shrink:0;}
+.lb-sc-num{font-size:18px;font-weight:800;color:var(--green-b);line-height:1;}
+.lb-sc-denom{font-size:10px;color:var(--t3);}
+
+/* Top 3 special styling */
+.lb-item-1 .lb-sc-num{color:var(--yellow);}
+.lb-item-2 .lb-sc-num{color:#9BA3AF;}
+.lb-item-3 .lb-sc-num{color:#CD853F;}
+.lb-item-1{border-left:3px solid rgba(210,153,34,0.5);}
+.lb-item-2{border-left:3px solid rgba(110,118,129,0.4);}
+.lb-item-3{border-left:3px solid rgba(205,133,63,0.4);}
+
+/* Actions */
+.lb-acts{display:flex;gap:10px;flex-wrap:wrap;}
+
+/* Empty */
+.empty-st{text-align:center;padding:72px 20px;}
+.empty-ico{font-size:48px;margin-bottom:14px;}
+.empty-title{font-size:18px;font-weight:700;margin-bottom:7px;}
+.empty-desc{color:var(--t3);font-size:14px;margin-bottom:24px;line-height:1.7;}
+
+@media(max-width:576px){
+    .lb-wrap{padding:20px 12px 48px;}
+    .lb-item{padding:12px 14px;}
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="lb-wrap">
+
+<div class="lb-hd anim-up d1">
+    <h1 class="lb-h1">
+        <i class="fas fa-trophy" style="color:var(--yellow);" aria-hidden="true"></i>
+        Developer Leaderboard
+    </h1>
+    <p class="lb-sub">Your private ranking — only profiles you've analyzed appear here</p>
 </div>
-</body>
-</html>
+
+<div class="lb-info anim-up d1">
+    <i class="fas fa-lock" aria-hidden="true"></i>
+    <span>This leaderboard is private to your browser session. Search any GitHub profile to add them to your rankings and compare scores.</span>
+</div>
+
+{% if is_empty or not entries %}
+<div class="empty-st anim-up d2">
+    <div class="empty-ico" aria-hidden="true">🏆</div>
+    <h2 class="empty-title">No Developers Yet</h2>
+    <p class="empty-desc">
+        Search GitHub profiles to add them here.<br>
+        Compare scores and track top performers.
+    </p>
+    <a href="/" class="btn-gs-primary">
+        <i class="fas fa-search" aria-hidden="true"></i>Analyze a Profile
+    </a>
+</div>
+
+{% else %}
+
+<div class="lb-card anim-up d2">
+    {% for entry in entries %}
+    <a href="/score/?username={{ entry.username }}" class="lb-item lb-item-{{ forloop.counter }}">
+        <div class="lb-rank-col">
+            {% if forloop.counter == 1 %}🥇
+            {% elif forloop.counter == 2 %}🥈
+            {% elif forloop.counter == 3 %}🥉
+            {% else %}<span style="font-size:13px;">#{{ forloop.counter }}</span>{% endif %}
+        </div>
+        <img src="{{ entry.avatar }}" class="lb-av" alt="{{ entry.name }}">
+        <div class="lb-info-col">
+            <div class="lb-name">{{ entry.name }}</div>
+            <div class="lb-user">@{{ entry.username }}</div>
+        </div>
+        <div class="lb-rank-badge-s">{{ entry.rank_icon }} {{ entry.rank }}</div>
+        <div class="lb-sc-col">
+            <div class="lb-sc-num">{{ entry.score }}</div>
+            <div class="lb-sc-denom">/ 200</div>
+        </div>
+    </a>
+    {% endfor %}
+</div>
+
+<div class="lb-acts anim-up d3">
+    <a href="/" class="btn-gs-primary">
+        <i class="fas fa-plus" aria-hidden="true"></i>Add Developer
+    </a>
+    <a href="/leaderboard/clear/" class="btn-gs-secondary"
+       style="color:var(--red);border-color:rgba(248,81,73,0.25);"
+       onclick="return confirm('Clear your entire leaderboard?')">
+        <i class="fas fa-trash" aria-hidden="true"></i>Clear Leaderboard
+    </a>
+</div>
+
+{% endif %}
+</div>
+{% endblock %}

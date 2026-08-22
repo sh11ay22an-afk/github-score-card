@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}GitHub Score Card{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+    :root {
+        --bg: #070A0F;
+        --bg2: #0D1117;
+        --card: #11161D;
+        --card-h: #151C24;
+        --border: #252D38;
+        --green: #2EA043;
+        --green-b: #3FB950;
+        --blue: #58A6FF;
+        --purple: #A371F7;
+        --orange: #F0883E;
+        --yellow: #D29922;
+        --red: #F85149;
+        --t1: #F0F6FC;
+        --t2: #8B949E;
+        --t3: #6E7681;
+        --r-sm:8px; --r-md:12px; --r-lg:16px; --r-xl:20px; --r-2xl:24px;
+        --ease: cubic-bezier(0.4,0,0.2,1);
+    }
+    *{margin:0;padding:0;box-sizing:border-box;}
+    html{scroll-behavior:smooth;}
+    body{
+        background:var(--bg);color:var(--t1);
+        font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
+        -webkit-font-smoothing:antialiased;min-height:100vh;
+        font-size:14px;line-height:1.6;overflow-x:hidden;
+    }
+    ::-webkit-scrollbar{width:5px;}
+    ::-webkit-scrollbar-track{background:var(--bg);}
+    ::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+    ::-webkit-scrollbar-thumb:hover{background:var(--t3);}
+
+    /* NAV */
+    .gs-nav{
+        position:sticky;top:0;z-index:100;height:56px;
+        background:rgba(7,10,15,0.85);
+        backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+        border-bottom:1px solid var(--border);
+        display:flex;align-items:center;padding:0 20px;gap:0;
+    }
+    .gs-brand{display:flex;align-items:center;gap:9px;text-decoration:none;margin-right:24px;}
+    .gs-brand-icon{
+        width:28px;height:28px;
+        background:linear-gradient(135deg,var(--green),var(--green-b));
+        border-radius:8px;display:flex;align-items:center;justify-content:center;
+        font-size:13px;color:white;flex-shrink:0;
+        box-shadow:0 2px 8px rgba(46,160,67,0.35);
+    }
+    .gs-brand-name{font-size:15px;font-weight:700;color:var(--t1);letter-spacing:-0.3px;}
+
+    .gs-nav-links{display:flex;align-items:center;gap:2px;flex:1;}
+    .gs-nav-link{
+        color:var(--t2);text-decoration:none;font-size:13px;font-weight:500;
+        padding:6px 12px;border-radius:var(--r-sm);
+        transition:all 0.15s var(--ease);
+        display:flex;align-items:center;gap:5px;
+    }
+    .gs-nav-link i{font-size:11px;}
+    .gs-nav-link:hover,.gs-nav-link.active{color:var(--t1);background:rgba(240,246,252,0.07);}
+
+    .gs-nav-right{display:flex;align-items:center;gap:8px;margin-left:auto;}
+    .gs-hamburger{
+        display:none;background:none;border:1px solid var(--border);
+        color:var(--t2);border-radius:var(--r-sm);padding:6px 10px;
+        cursor:pointer;font-size:14px;transition:all 0.15s;
+    }
+    .gs-hamburger:hover{color:var(--t1);border-color:var(--t3);}
+
+    .gs-mob-nav{
+        display:none;position:fixed;top:56px;left:0;right:0;
+        background:var(--bg2);border-bottom:1px solid var(--border);
+        padding:8px 12px 12px;z-index:99;
+        box-shadow:0 8px 24px rgba(0,0,0,0.4);
+    }
+    .gs-mob-nav.open{display:block;}
+    .gs-mob-nav a{
+        display:flex;align-items:center;gap:8px;color:var(--t2);
+        text-decoration:none;font-size:14px;font-weight:500;
+        padding:10px 12px;border-radius:var(--r-sm);transition:all 0.15s;
+    }
+    .gs-mob-nav a:hover{color:var(--t1);background:rgba(240,246,252,0.07);}
+    .gs-mob-nav i{font-size:12px;width:16px;}
+
+    /* TOAST */
+    .gs-toast{
+        position:fixed;bottom:20px;right:20px;
+        background:var(--card);border:1px solid var(--border);
+        color:var(--t1);padding:11px 16px;border-radius:var(--r-md);
+        font-size:13px;font-weight:500;
+        opacity:0;transform:translateY(12px);
+        transition:all 0.25s var(--ease);z-index:9999;
+        display:flex;align-items:center;gap:8px;
+        box-shadow:0 8px 24px rgba(0,0,0,0.5);pointer-events:none;
+    }
+    .gs-toast.show{opacity:1;transform:translateY(0);pointer-events:auto;}
+
+    /* BUTTONS */
+    .btn-gs-primary{
+        background:linear-gradient(135deg,var(--green),var(--green-b));
+        color:white;border:none;border-radius:var(--r-md);
+        padding:10px 18px;font-size:14px;font-weight:600;
+        font-family:'Inter',sans-serif;cursor:pointer;
+        transition:all 0.2s var(--ease);
+        display:inline-flex;align-items:center;gap:7px;
+        text-decoration:none;white-space:nowrap;
+    }
+    .btn-gs-primary:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(46,160,67,0.4);color:white;}
+    .btn-gs-primary:active{transform:translateY(0);}
+
+    .btn-gs-secondary{
+        background:rgba(240,246,252,0.05);color:var(--t2);
+        border:1px solid var(--border);border-radius:var(--r-md);
+        padding:10px 18px;font-size:14px;font-weight:600;
+        font-family:'Inter',sans-serif;cursor:pointer;
+        transition:all 0.2s var(--ease);
+        display:inline-flex;align-items:center;gap:7px;
+        text-decoration:none;white-space:nowrap;
+    }
+    .btn-gs-secondary:hover{color:var(--t1);border-color:rgba(240,246,252,0.2);background:rgba(240,246,252,0.08);}
+
+    .btn-gs-ghost{
+        background:transparent;color:var(--t3);border:none;
+        border-radius:var(--r-sm);padding:8px 12px;
+        font-size:13px;font-weight:500;font-family:'Inter',sans-serif;
+        cursor:pointer;transition:all 0.15s var(--ease);
+        display:inline-flex;align-items:center;gap:6px;text-decoration:none;
+    }
+    .btn-gs-ghost:hover{color:var(--t1);}
+
+    /* CARD */
+    .card-gs{
+        background:var(--card);border:1px solid var(--border);
+        border-radius:var(--r-xl);transition:all 0.2s var(--ease);
+    }
+    .card-gs-h:hover{
+        border-color:rgba(46,160,67,0.3);background:var(--card-h);
+        transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,0.3);
+    }
+
+    /* PROGRESS */
+    .prog-track{background:rgba(37,45,56,0.7);border-radius:99px;overflow:hidden;}
+    .prog-fill{
+        border-radius:99px;width:0%;
+        transition:width 1.5s cubic-bezier(0.4,0,0.2,1);
+        background:linear-gradient(90deg,var(--green),var(--green-b));
+    }
+
+    /* LABEL */
+    .label-gs{
+        font-size:10px;font-weight:700;color:var(--t3);
+        text-transform:uppercase;letter-spacing:1.5px;
+    }
+
+    /* ANIMATIONS */
+    @keyframes fadeUp{from{opacity:0;transform:translateY(18px);}to{opacity:1;transform:translateY(0);}}
+    @keyframes scaleIn{from{opacity:0;transform:scale(0.92);}to{opacity:1;transform:scale(1);}}
+    .anim-up{animation:fadeUp 0.5s var(--ease) forwards;opacity:0;}
+    .anim-sc{animation:scaleIn 0.4s var(--ease) forwards;opacity:0;}
+    .d1{animation-delay:0.05s}.d2{animation-delay:0.1s}.d3{animation-delay:0.15s}
+    .d4{animation-delay:0.2s}.d5{animation-delay:0.25s}.d6{animation-delay:0.3s}
+    @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:0.01ms!important;transition-duration:0.01ms!important;}}
+
+    /* RESPONSIVE */
+    @media(max-width:768px){.gs-nav-links{display:none;}.gs-hamburger{display:block;}}
+    </style>
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+
+<nav class="gs-nav" role="navigation" aria-label="Main navigation">
+    <a href="/" class="gs-brand" aria-label="GitHub Score Card Home">
+        <div class="gs-brand-icon" aria-hidden="true"><i class="fab fa-github"></i></div>
+        <span class="gs-brand-name">GitHub Score Card</span>
+    </a>
+    <div class="gs-nav-links">
+        <a href="/" class="gs-nav-link {% block nav_analyze %}{% endblock %}">
+            <i class="fas fa-search" aria-hidden="true"></i>Analyze
+        </a>
+        <a href="/leaderboard/" class="gs-nav-link {% block nav_leaderboard %}{% endblock %}">
+            <i class="fas fa-trophy" aria-hidden="true"></i>Leaderboard
+        </a>
+    </div>
+    <div class="gs-nav-right">
+        <button class="gs-hamburger" onclick="toggleMob()" id="hambBtn" aria-label="Menu" aria-expanded="false">
+            <i class="fas fa-bars" aria-hidden="true"></i>
+        </button>
+    </div>
+</nav>
+
+<div class="gs-mob-nav" id="mobNav" role="navigation" aria-label="Mobile navigation">
+    <a href="/"><i class="fas fa-search" aria-hidden="true"></i>Analyze</a>
+    <a href="/leaderboard/"><i class="fas fa-trophy" aria-hidden="true"></i>Leaderboard</a>
+</div>
+
+{% block content %}{% endblock %}
+
+<div class="gs-toast" id="gsToast" role="alert" aria-live="polite">
+    <i class="fas fa-check-circle" style="color:var(--green)" aria-hidden="true"></i>
+    <span id="gsToastMsg">Done!</span>
+</div>
+
+<script>
+function toggleMob(){
+    const n=document.getElementById('mobNav');
+    const b=document.getElementById('hambBtn');
+    const open=n.classList.toggle('open');
+    b.setAttribute('aria-expanded',open);
+    b.querySelector('i').className=open?'fas fa-times':'fas fa-bars';
+}
+document.addEventListener('click',e=>{
+    const n=document.getElementById('mobNav');
+    const b=document.getElementById('hambBtn');
+    if(n.classList.contains('open')&&!n.contains(e.target)&&!b.contains(e.target)){
+        n.classList.remove('open');
+        b.querySelector('i').className='fas fa-bars';
+        b.setAttribute('aria-expanded','false');
+    }
+});
+function showToast(msg,ok=true){
+    const t=document.getElementById('gsToast');
+    document.getElementById('gsToastMsg').textContent=msg;
+    t.querySelector('i').style.color=ok?'var(--green)':'var(--red)';
+    t.querySelector('i').className=ok?'fas fa-check-circle':'fas fa-times-circle';
+    t.classList.add('show');
+    setTimeout(()=>t.classList.remove('show'),3000);
+}
+function copyLink(){
+    navigator.clipboard.writeText(window.location.href)
+        .then(()=>showToast('Link copied to clipboard!'))
+        .catch(()=>showToast('Failed to copy',false));
+}
+</script>
+
+{% block scripts %}{% endblock %}
+</body>
+</html>

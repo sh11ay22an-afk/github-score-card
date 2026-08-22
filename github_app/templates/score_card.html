@@ -1,1037 +1,785 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ name }} — GitHub Score Card</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+{% extends "base.html" %}
+{% block title %}{% if not error %}{{ name }} — GitHub Score{% else %}Not Found{% endif %}{% endblock %}
 
-        body {
-            background: #060910;
-            min-height: 100vh;
-            font-family: 'Inter', sans-serif;
-            color: #e6edf3;
-            overflow-x: hidden;
-        }
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+.sc-wrap{max-width:960px;margin:0 auto;padding:24px 18px 60px;}
 
-        /* Background */
-        .bg-glow {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            pointer-events: none;
-            z-index: 0;
-        }
-        .bg-glow::before {
-            content: '';
-            position: absolute;
-            top: -10%;
-            right: -10%;
-            width: 500px;
-            height: 500px;
-            background: radial-gradient(circle, rgba(35,134,54,0.08) 0%, transparent 70%);
-        }
-        .bg-glow::after {
-            content: '';
-            position: absolute;
-            bottom: -10%;
-            left: -10%;
-            width: 400px;
-            height: 400px;
-            background: radial-gradient(circle, rgba(56,139,253,0.06) 0%, transparent 70%);
-        }
+/* TOPBAR */
+.sc-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;}
+.back-lnk{display:flex;align-items:center;gap:6px;color:var(--t3);text-decoration:none;font-size:13px;font-weight:500;transition:color 0.15s;}
+.back-lnk:hover{color:var(--t1);}
+.page-tag{font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:1.5px;}
 
-        .container { position: relative; z-index: 1; }
+/* PROFILE HERO */
+.prof-hero{
+    background:var(--card);border:1px solid var(--border);
+    border-radius:var(--r-2xl);padding:28px;margin-bottom:14px;
+    position:relative;overflow:hidden;
+}
+.prof-hero::before{
+    content:'';position:absolute;top:-80px;right:-80px;
+    width:300px;height:300px;
+    background:radial-gradient(circle,rgba(46,160,67,0.05) 0%,transparent 70%);
+    pointer-events:none;
+}
+.prof-row{display:flex;align-items:flex-start;gap:24px;}
 
-        /* Animations */
-        @keyframes fadeUp {
-            from { opacity: 0; transform: translateY(24px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes scaleIn {
-            from { opacity: 0; transform: scale(0.8); }
-            to { opacity: 1; transform: scale(1); }
-        }
-        @keyframes countUp { from { opacity: 0; } to { opacity: 1; } }
+/* Avatar */
+.av-ring{
+    width:88px;height:88px;border-radius:50%;padding:2px;flex-shrink:0;
+    background:linear-gradient(135deg,var(--green),var(--blue));
+    animation:avPulse 3s ease infinite;
+}
+@keyframes avPulse{0%,100%{box-shadow:0 0 0 0 rgba(46,160,67,0);}50%{box-shadow:0 0 0 4px rgba(46,160,67,0.12);}}
+.av-img{width:100%;height:100%;border-radius:50%;border:2px solid var(--bg);object-fit:cover;}
 
-        .fade-up { animation: fadeUp 0.6s ease forwards; opacity: 0; }
-        .d1{animation-delay:0.05s} .d2{animation-delay:0.15s} .d3{animation-delay:0.25s}
-        .d4{animation-delay:0.35s} .d5{animation-delay:0.45s} .d6{animation-delay:0.55s}
+.prof-info{flex:1;min-width:0;}
+.prof-name{font-size:21px;font-weight:800;color:var(--t1);letter-spacing:-0.5px;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.prof-uname{display:inline-flex;align-items:center;gap:5px;color:var(--blue);font-size:13px;font-weight:500;text-decoration:none;transition:color 0.15s;}
+.prof-uname:hover{color:#79c0ff;}
+.prof-bio{font-size:13px;color:var(--t2);margin-top:10px;line-height:1.6;max-width:460px;}
+.prof-meta{display:flex;flex-wrap:wrap;gap:14px;margin-top:10px;}
+.prof-meta-i{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--t3);font-weight:500;}
+.prof-meta-i i{font-size:11px;color:var(--green);}
+.prof-meta-i a{color:var(--blue);text-decoration:none;}
+.prof-meta-i a:hover{text-decoration:underline;}
 
-        /* Cards */
-        .card-base {
-            background: rgba(13,17,23,0.7);
-            border: 1px solid rgba(48,54,61,0.6);
-            border-radius: 20px;
-            backdrop-filter: blur(20px);
-        }
+/* Score Ring */
+.sc-col{display:flex;flex-direction:column;align-items:center;gap:10px;flex-shrink:0;min-width:150px;}
+.sc-ring-wrap{position:relative;width:136px;height:136px;}
+.sc-ring-svg{width:100%;height:100%;transform:rotate(-90deg);}
+.sc-ring-track{fill:none;stroke:var(--border);stroke-width:8;}
+.sc-ring-fill{
+    fill:none;stroke:url(#scGrad);stroke-width:8;stroke-linecap:round;
+    stroke-dasharray:351.86;stroke-dashoffset:351.86;
+    transition:stroke-dashoffset 1.5s cubic-bezier(0.4,0,0.2,1);
+}
+.sc-ring-inside{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+.sc-num{font-size:36px;font-weight:900;color:var(--t1);line-height:1;font-variant-numeric:tabular-nums;}
+.sc-denom{font-size:11px;color:var(--t3);font-weight:500;}
+.rank-pill{
+    display:inline-flex;align-items:center;gap:5px;
+    padding:5px 14px;border-radius:50px;font-size:11px;font-weight:700;
+    border:1px solid;letter-spacing:0.3px;
+}
 
-        .card-glow {
-            background: rgba(13,17,23,0.7);
-            border: 1px solid rgba(48,54,61,0.6);
-            border-radius: 20px;
-            transition: border-color 0.3s, transform 0.3s;
-        }
-        .card-glow:hover {
-            border-color: rgba(35,134,54,0.4);
-            transform: translateY(-2px);
-        }
+/* Score progress */
+.sc-prog{margin-top:18px;padding-top:18px;border-top:1px solid var(--border);}
+.sc-prog-hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px;font-size:11px;color:var(--t3);font-weight:500;}
+.sc-prog-track{height:5px;background:rgba(37,45,56,0.8);border-radius:99px;overflow:hidden;}
+.sc-prog-fill{height:100%;border-radius:99px;width:0%;background:linear-gradient(90deg,var(--green),var(--green-b));transition:width 1.5s cubic-bezier(0.4,0,0.2,1);}
 
-        /* Section Label */
-        .section-label {
-            font-size: 11px;
-            font-weight: 600;
-            color: #484f58;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            margin-bottom: 16px;
-        }
+/* STATS GRID */
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-bottom:14px;}
+.stat-box{
+    background:var(--card);border:1px solid var(--border);
+    border-radius:var(--r-lg);padding:16px 12px;text-align:center;
+    transition:all 0.2s var(--ease);
+}
+.stat-box:hover{border-color:rgba(46,160,67,0.3);background:var(--card-h);transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,0.3);}
+.stat-ico{font-size:13px;display:block;margin-bottom:8px;}
+.stat-val{font-size:26px;font-weight:800;line-height:1;margin-bottom:4px;font-variant-numeric:tabular-nums;}
+.stat-lbl{font-size:10px;color:var(--t3);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;}
 
-        /* Profile Hero */
-        .profile-hero {
-            background: linear-gradient(135deg, rgba(22,27,34,0.9) 0%, rgba(13,17,23,0.9) 100%);
-            border: 1px solid rgba(48,54,61,0.6);
-            border-radius: 24px;
-            padding: 32px;
-            position: relative;
-            overflow: hidden;
-        }
-        .profile-hero::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            right: 0;
-            width: 300px;
-            height: 300px;
-            background: radial-gradient(circle, rgba(35,134,54,0.08) 0%, transparent 70%);
-            pointer-events: none;
-        }
+/* SAC ROW */
+.sac-grid{display:grid;grid-template-columns:1fr 1.4fr 2fr;gap:9px;margin-bottom:14px;}
 
-        .avatar-ring {
-            position: relative;
-            display: inline-block;
-        }
-        .avatar-ring::before {
-            content: '';
-            position: absolute;
-            inset: -3px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #238636, #2ea043, #58a6ff);
-            animation: ringRotate 3s linear infinite;
-            z-index: 0;
-        }
-        @keyframes ringRotate {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
-        .avatar-img {
-            width: 96px;
-            height: 96px;
-            border-radius: 50%;
-            position: relative;
-            z-index: 1;
-            border: 3px solid #060910;
-        }
+/* Streak */
+.streak-card{
+    background:linear-gradient(135deg,rgba(240,136,62,0.07),rgba(17,22,29,0));
+    border:1px solid rgba(240,136,62,0.2);border-radius:var(--r-xl);
+    padding:20px;text-align:center;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+}
+.streak-ico{font-size:22px;margin-bottom:2px;}
+.streak-num{font-size:46px;font-weight:900;color:var(--orange);line-height:1;font-variant-numeric:tabular-nums;}
+.streak-lbl{font-size:11px;color:var(--t3);font-weight:500;}
+.streak-sta{font-size:11px;font-weight:600;margin-top:5px;}
 
-        /* Score Circle */
-        .score-wrap { position: relative; }
-        .score-circle {
-            width: 156px;
-            height: 156px;
-            border-radius: 50%;
-            background: conic-gradient(
-                #238636 0deg,
-                #2ea043 calc(var(--pct) * 3.6deg),
-                rgba(48,54,61,0.5) calc(var(--pct) * 3.6deg) 360deg
-            );
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto;
-            animation: scaleIn 0.6s ease forwards;
-            position: relative;
-        }
-        .score-circle::before {
-            content: '';
-            position: absolute;
-            inset: 8px;
-            border-radius: 50%;
-            background: #060910;
-        }
-        .score-inner {
-            position: relative;
-            z-index: 1;
-            text-align: center;
-        }
-        .score-num {
-            font-size: 42px;
-            font-weight: 900;
-            color: white;
-            line-height: 1;
-            font-variant-numeric: tabular-nums;
-        }
-        .score-denom {
-            font-size: 12px;
-            color: #8b949e;
-            font-weight: 500;
-        }
+/* Activity */
+.act-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r-xl);padding:20px;display:flex;flex-direction:column;}
+.act-badge{
+    display:inline-flex;align-items:center;gap:5px;
+    padding:4px 11px;border-radius:50px;font-size:11px;font-weight:600;
+    border:1px solid;width:fit-content;margin-bottom:8px;
+}
+.act-num{font-size:42px;font-weight:900;color:var(--blue);line-height:1;font-variant-numeric:tabular-nums;}
+.act-sub{font-size:12px;color:var(--t3);margin-top:3px;}
+.act-tip{font-size:11px;color:var(--t3);margin-top:8px;line-height:1.6;flex:1;}
 
-        .rank-pill {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 6px 16px;
-            border-radius: 50px;
-            font-size: 13px;
-            font-weight: 600;
-            margin-top: 10px;
-            border: 1px solid;
-        }
+/* Completeness */
+.comp-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r-xl);padding:20px;}
+.comp-top{display:flex;align-items:center;gap:14px;margin-bottom:14px;}
+.comp-pct{font-size:34px;font-weight:900;line-height:1;flex-shrink:0;}
+.comp-prog{flex:1;}
+.comp-track{height:5px;background:rgba(37,45,56,0.8);border-radius:99px;overflow:hidden;margin-bottom:5px;}
+.comp-fill{height:100%;border-radius:99px;width:0%;transition:width 1.5s cubic-bezier(0.4,0,0.2,1);}
+.comp-lbl{font-size:10px;color:var(--t3);}
+.comp-item{display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid rgba(37,45,56,0.5);font-size:12px;}
+.comp-item:last-child{border:none;padding-bottom:0;}
+.comp-item-nm{color:var(--t2);}
+.ci-yes{color:var(--green);}
+.ci-no{color:var(--red);}
 
-        /* Progress */
-        .progress-track {
-            background: rgba(48,54,61,0.5);
-            border-radius: 99px;
-            height: 6px;
-            overflow: hidden;
-            margin-top: 20px;
-        }
-        .progress-fill {
-            height: 100%;
-            border-radius: 99px;
-            background: linear-gradient(90deg, #238636, #2ea043);
-            width: 0%;
-            transition: width 1.5s cubic-bezier(0.4, 0, 0.2, 1);
-        }
+/* Chart card */
+.ch-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r-xl);padding:20px;}
 
-        /* Stat Cards */
-        .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
-        .stat-box {
-            background: rgba(13,17,23,0.7);
-            border: 1px solid rgba(48,54,61,0.6);
-            border-radius: 16px;
-            padding: 18px 12px;
-            text-align: center;
-            transition: all 0.3s;
-        }
-        .stat-box:hover {
-            border-color: rgba(35,134,54,0.4);
-            transform: translateY(-3px);
-            background: rgba(35,134,54,0.05);
-        }
-        .stat-val {
-            font-size: 28px;
-            font-weight: 800;
-            line-height: 1;
-            margin-bottom: 6px;
-        }
-        .stat-lbl {
-            font-size: 11px;
-            color: #484f58;
-            font-weight: 500;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
+/* Tech + Lang */
+.tl-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:14px;}
+.badge-lang{
+    display:inline-flex;align-items:center;
+    padding:4px 12px;border-radius:50px;
+    background:rgba(88,166,255,0.08);border:1px solid rgba(88,166,255,0.18);
+    color:#79c0ff;font-size:12px;font-weight:500;margin:3px;
+    transition:all 0.15s;
+}
+.badge-lang:hover{background:rgba(88,166,255,0.15);transform:translateY(-1px);}
+.badge-tech{
+    display:inline-flex;align-items:center;
+    padding:4px 12px;border-radius:50px;
+    background:rgba(163,113,247,0.08);border:1px solid rgba(163,113,247,0.18);
+    color:#c9a8f5;font-size:12px;font-weight:500;margin:3px;
+    transition:all 0.15s;
+}
+.badge-tech:hover{background:rgba(163,113,247,0.15);transform:translateY(-1px);}
 
-        /* Streak */
-        .streak-box {
-            background: linear-gradient(135deg, rgba(240,136,62,0.1), rgba(13,17,23,0.9));
-            border: 1px solid rgba(240,136,62,0.3);
-            border-radius: 20px;
-            padding: 24px;
-            text-align: center;
-        }
-        .streak-num {
-            font-size: 56px;
-            font-weight: 900;
-            background: linear-gradient(135deg, #f0883e, #ffa657);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            line-height: 1;
-        }
+/* Quality */
+.qual-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r-xl);padding:20px;margin-bottom:14px;}
+.qual-inner{display:flex;align-items:center;gap:22px;}
+.qual-left{text-align:center;flex-shrink:0;min-width:90px;}
+.qual-pct{font-size:40px;font-weight:900;line-height:1;}
+.qual-lbl{font-size:10px;color:var(--t3);margin-top:3px;}
+.qual-right{flex:1;}
+.qual-desc{font-size:12px;color:var(--t2);margin-bottom:8px;}
+.qual-track{height:6px;background:rgba(37,45,56,0.8);border-radius:99px;overflow:hidden;margin-bottom:7px;}
+.qual-fill{height:100%;border-radius:99px;width:0%;background:linear-gradient(90deg,var(--green),var(--green-b));transition:width 1.5s cubic-bezier(0.4,0,0.2,1);}
+.qual-crit{display:flex;gap:10px;flex-wrap:wrap;}
+.qual-cr{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--t3);}
 
-        /* Activity */
-        .activity-box {
-            background: rgba(13,17,23,0.7);
-            border: 1px solid rgba(48,54,61,0.6);
-            border-radius: 20px;
-            padding: 24px;
-        }
-        .activity-num {
-            font-size: 52px;
-            font-weight: 900;
-            background: linear-gradient(135deg, #58a6ff, #79c0ff);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            line-height: 1;
-            margin: 12px 0 4px;
-        }
-        .activity-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 6px 14px;
-            border-radius: 50px;
-            font-size: 13px;
-            font-weight: 600;
-            border: 1px solid;
-        }
+/* Score History */
+.hist-card-sc{background:var(--card);border:1px solid var(--border);border-radius:var(--r-xl);padding:20px;margin-bottom:14px;}
+.hist-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px;}
+.hist-stat{text-align:center;padding:12px;background:rgba(37,45,56,0.3);border-radius:var(--r-md);border:1px solid rgba(37,45,56,0.5);}
+.hist-stat-num{font-size:22px;font-weight:800;line-height:1;margin-bottom:3px;}
+.hist-stat-lbl{font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:1px;}
+.first-sc{
+    display:flex;align-items:center;gap:20px;
+    background:rgba(46,160,67,0.04);border:1px solid rgba(46,160,67,0.1);
+    border-radius:var(--r-lg);padding:20px;
+}
+.first-sc-num{font-size:48px;font-weight:900;color:var(--green);line-height:1;text-align:center;flex-shrink:0;}
+.first-sc-denom{font-size:10px;color:var(--t3);text-align:center;}
+.first-sc-info{font-size:13px;color:var(--t2);line-height:1.7;}
 
-        /* Completeness */
-        .complete-box {
-            background: rgba(13,17,23,0.7);
-            border: 1px solid rgba(48,54,61,0.6);
-            border-radius: 20px;
-            padding: 24px;
-        }
-        .complete-pct {
-            font-size: 40px;
-            font-weight: 900;
-            line-height: 1;
-        }
-        .complete-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 8px 0;
-            border-bottom: 1px solid rgba(48,54,61,0.3);
-            font-size: 13px;
-        }
-        .complete-row:last-child { border: none; }
-        .check-yes { color: #2ea043; font-size: 14px; }
-        .check-no { color: #da3633; font-size: 14px; }
+/* Top Repos */
+.top-repos-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:14px;}
+.repo-card-gs{
+    background:var(--card);border:1px solid var(--border);
+    border-radius:var(--r-lg);padding:16px;
+    display:flex;flex-direction:column;gap:7px;
+    transition:all 0.2s var(--ease);
+}
+.repo-card-gs:hover{border-color:rgba(46,160,67,0.3);background:var(--card-h);transform:translateY(-3px);box-shadow:0 8px 24px rgba(0,0,0,0.3);}
+.repo-nm{color:var(--blue);font-size:13px;font-weight:600;text-decoration:none;transition:color 0.15s;}
+.repo-nm:hover{color:#79c0ff;}
+.repo-desc-gs{color:var(--t3);font-size:11px;line-height:1.5;flex:1;}
+.repo-foot{display:flex;align-items:center;justify-content:space-between;margin-top:3px;}
+.repo-lang-gs{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--t3);}
+.repo-lang-dot{width:7px;height:7px;border-radius:50%;background:var(--orange);}
+.repo-stars-gs{display:flex;align-items:center;gap:3px;font-size:11px;color:var(--t3);}
 
-        /* Badges */
-        .lang-badge {
-            display: inline-block;
-            padding: 5px 14px;
-            border-radius: 50px;
-            background: rgba(56,139,253,0.12);
-            border: 1px solid rgba(56,139,253,0.25);
-            color: #79c0ff;
-            font-size: 12px;
-            font-weight: 500;
-            margin: 3px;
-            transition: all 0.2s;
-        }
-        .lang-badge:hover { background: rgba(56,139,253,0.22); transform: translateY(-2px); }
+/* All Repos */
+.all-repos-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r-xl);overflow:hidden;margin-bottom:14px;}
+.all-repos-toggle{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:16px 20px;cursor:pointer;transition:background 0.15s;user-select:none;
+}
+.all-repos-toggle:hover{background:rgba(37,45,56,0.3);}
+.all-repos-body{display:none;overflow-x:auto;}
+.repos-tbl{width:100%;border-collapse:collapse;}
+.repos-tbl th{
+    background:rgba(37,45,56,0.4);color:var(--t3);
+    font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;
+    padding:10px 16px;text-align:left;
+}
+.repos-tbl td{padding:10px 16px;border-bottom:1px solid rgba(37,45,56,0.4);font-size:12px;color:var(--t2);}
+.repos-tbl tr:last-child td{border:none;}
+.repos-tbl tr:hover td{background:rgba(37,45,56,0.2);}
+.repos-tbl a{color:var(--blue);text-decoration:none;font-weight:500;}
+.repos-tbl a:hover{color:#79c0ff;}
 
-        .tech-badge {
-            display: inline-block;
-            padding: 5px 14px;
-            border-radius: 50px;
-            background: rgba(163,113,247,0.12);
-            border: 1px solid rgba(163,113,247,0.25);
-            color: #c9a8f5;
-            font-size: 12px;
-            font-weight: 500;
-            margin: 3px;
-            transition: all 0.2s;
-        }
-        .tech-badge:hover { background: rgba(163,113,247,0.22); transform: translateY(-2px); }
+/* Tips */
+.tips-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r-xl);padding:20px;margin-bottom:14px;}
+.tip-gs{
+    display:flex;gap:12px;align-items:flex-start;
+    padding:13px;background:rgba(46,160,67,0.04);
+    border:1px solid rgba(46,160,67,0.1);border-radius:var(--r-md);
+    margin-bottom:8px;transition:all 0.15s;
+}
+.tip-gs:last-child{margin-bottom:0;}
+.tip-gs:hover{background:rgba(46,160,67,0.08);border-color:rgba(46,160,67,0.18);}
+.tip-ico-gs{
+    width:28px;height:28px;background:rgba(46,160,67,0.12);border-radius:7px;
+    display:flex;align-items:center;justify-content:center;
+    color:var(--green);font-size:12px;flex-shrink:0;
+}
+.tip-txt-gs{font-size:13px;color:var(--t2);line-height:1.6;padding-top:3px;}
 
-        /* Repos */
-        .repo-card {
-            background: rgba(13,17,23,0.7);
-            border: 1px solid rgba(48,54,61,0.6);
-            border-radius: 16px;
-            padding: 18px;
-            height: 100%;
-            transition: all 0.3s;
-        }
-        .repo-card:hover {
-            border-color: rgba(35,134,54,0.5);
-            transform: translateY(-4px);
-            background: rgba(35,134,54,0.04);
-        }
-        .repo-title { color: #58a6ff; text-decoration: none; font-weight: 600; font-size: 14px; }
-        .repo-title:hover { color: #79c0ff; }
-        .repo-desc { color: #484f58; font-size: 12px; line-height: 1.6; margin-top: 8px; }
+/* Actions */
+.acts-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r-xl);padding:20px;margin-bottom:14px;}
+.acts-row{display:flex;flex-wrap:wrap;gap:9px;align-items:center;}
+.btn-a-li{
+    background:#0a66c2;color:white;border:none;border-radius:var(--r-md);
+    padding:9px 15px;font-size:13px;font-weight:600;font-family:'Inter',sans-serif;
+    cursor:pointer;transition:all 0.2s;display:inline-flex;align-items:center;gap:6px;text-decoration:none;
+}
+.btn-a-li:hover{background:#0056a0;color:white;box-shadow:0 4px 14px rgba(10,102,194,0.4);transform:translateY(-1px);}
+.btn-a-copy{
+    background:rgba(240,246,252,0.05);color:var(--t2);
+    border:1px solid var(--border);border-radius:var(--r-md);
+    padding:9px 15px;font-size:13px;font-weight:600;font-family:'Inter',sans-serif;
+    cursor:pointer;transition:all 0.2s;display:inline-flex;align-items:center;gap:6px;
+}
+.btn-a-copy:hover{color:var(--t1);border-color:rgba(240,246,252,0.2);transform:translateY(-1px);}
+.btn-a-gh{
+    background:rgba(240,246,252,0.04);color:var(--t2);
+    border:1px solid var(--border);border-radius:var(--r-md);
+    padding:9px 15px;font-size:13px;font-weight:600;font-family:'Inter',sans-serif;
+    cursor:pointer;transition:all 0.2s;display:inline-flex;align-items:center;gap:6px;text-decoration:none;
+}
+.btn-a-gh:hover{color:var(--t1);border-color:rgba(240,246,252,0.15);transform:translateY(-1px);}
+.btn-a-lb{
+    background:rgba(210,153,34,0.07);color:var(--yellow);
+    border:1px solid rgba(210,153,34,0.2);border-radius:var(--r-md);
+    padding:9px 15px;font-size:13px;font-weight:600;font-family:'Inter',sans-serif;
+    cursor:pointer;transition:all 0.2s;display:inline-flex;align-items:center;gap:6px;text-decoration:none;
+}
+.btn-a-lb:hover{background:rgba(210,153,34,0.12);color:var(--yellow);transform:translateY(-1px);}
 
-        /* Tips */
-        .tip-card {
-            display: flex;
-            gap: 14px;
-            align-items: flex-start;
-            padding: 16px;
-            background: rgba(35,134,54,0.06);
-            border: 1px solid rgba(35,134,54,0.15);
-            border-radius: 14px;
-            margin-bottom: 10px;
-            transition: all 0.2s;
-        }
-        .tip-card:hover { background: rgba(35,134,54,0.1); border-color: rgba(35,134,54,0.3); }
-        .tip-icon {
-            width: 32px;
-            height: 32px;
-            background: rgba(35,134,54,0.2);
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-            color: #238636;
-            font-size: 14px;
-        }
-        .tip-text { font-size: 13px; color: #8b949e; line-height: 1.6; padding-top: 4px; }
+/* Chevron */
+.chev{transition:transform 0.25s var(--ease);color:var(--t3);font-size:12px;}
+.chev.open{transform:rotate(180deg);}
 
-        /* Quality */
-        .quality-wrap {
-            background: rgba(13,17,23,0.7);
-            border: 1px solid rgba(48,54,61,0.6);
-            border-radius: 20px;
-            padding: 24px;
-        }
-        .quality-pct {
-            font-size: 52px;
-            font-weight: 900;
-            line-height: 1;
-        }
-        .quality-bar-track {
-            background: rgba(48,54,61,0.5);
-            border-radius: 99px;
-            height: 8px;
-            overflow: hidden;
-            margin: 12px 0;
-        }
-        .quality-bar-fill {
-            height: 100%;
-            border-radius: 99px;
-            background: linear-gradient(90deg, #238636, #2ea043);
-            width: 0%;
-            transition: width 1.5s cubic-bezier(0.4, 0, 0.2, 1);
-        }
+/* Card label */
+.c-lbl{font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:14px;display:block;}
 
-        /* Repos Table */
-        .repos-toggle-btn {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            cursor: pointer;
-            padding: 20px 24px;
-            border-radius: 20px 20px 0 0;
-            transition: background 0.2s;
-        }
-        .repos-toggle-btn:hover { background: rgba(35,134,54,0.05); }
-        .repos-table-wrap { overflow-x: auto; }
-        .repos-table { width: 100%; border-collapse: collapse; }
-        .repos-table th {
-            background: rgba(48,54,61,0.3);
-            color: #484f58;
-            font-size: 11px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            padding: 12px 16px;
-            text-align: left;
-            font-weight: 600;
-        }
-        .repos-table td {
-            padding: 12px 16px;
-            border-bottom: 1px solid rgba(48,54,61,0.3);
-            font-size: 13px;
-            color: #8b949e;
-        }
-        .repos-table tr:last-child td { border: none; }
-        .repos-table tr:hover td { background: rgba(48,54,61,0.2); }
-        .repos-table a { color: #58a6ff; text-decoration: none; font-weight: 500; }
+/* Row */
+.sc-row{margin-bottom:14px;}
 
-        /* Share Buttons */
-        .action-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 11px 20px;
-            border-radius: 12px;
-            font-size: 13px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-            text-decoration: none;
-            border: none;
-            font-family: 'Inter', sans-serif;
-        }
-        .action-btn:hover { transform: translateY(-2px); }
-        .btn-li { background: #0a66c2; color: white; }
-        .btn-li:hover { background: #0856a8; color: white; box-shadow: 0 6px 20px rgba(10,102,194,0.4); }
-        .btn-copy { background: rgba(48,54,61,0.7); color: #e6edf3; border: 1px solid rgba(48,54,61,0.8); }
-        .btn-copy:hover { border-color: #238636; color: #2ea043; box-shadow: 0 6px 20px rgba(35,134,54,0.2); }
-        .btn-lb { background: rgba(240,183,62,0.1); color: #f0b73e; border: 1px solid rgba(240,183,62,0.3); }
-        .btn-lb:hover { background: rgba(240,183,62,0.2); box-shadow: 0 6px 20px rgba(240,183,62,0.2); }
+/* Empty */
+.empty-tech{color:var(--t3);font-size:13px;padding:6px 0;}
 
-        /* Back Button */
-        .back-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            color: #484f58;
-            text-decoration: none;
-            font-size: 13px;
-            font-weight: 500;
-            padding: 10px 0;
-            transition: color 0.2s;
-        }
-        .back-btn:hover { color: #8b949e; }
+/* Responsive */
+@media(max-width:900px){
+    .sac-grid{grid-template-columns:1fr 1fr;}
+    .sac-grid>div:last-child{grid-column:1/-1;}
+    .tl-grid{grid-template-columns:1fr;}
+    .top-repos-grid{grid-template-columns:repeat(2,1fr);}
+}
+@media(max-width:768px){
+    .prof-row{flex-direction:column;align-items:center;text-align:center;}
+    .prof-meta{justify-content:center;}
+    .stats-grid{grid-template-columns:repeat(2,1fr);}
+    .sac-grid{grid-template-columns:1fr;}
+    .qual-inner{flex-direction:column;text-align:center;}
+    .acts-row{justify-content:center;}
+    .first-sc{flex-direction:column;text-align:center;}
+}
+@media(max-width:576px){
+    .sc-wrap{padding:16px 12px 48px;}
+    .prof-hero{padding:18px 14px;}
+    .stats-grid{grid-template-columns:repeat(2,1fr);}
+    .top-repos-grid{grid-template-columns:1fr;}
+    .sc-num{font-size:30px;}
+    .sc-ring-wrap{width:118px;height:118px;}
+}
+</style>
+{% endblock %}
 
-        /* Toast */
-        .toast-msg {
-            position: fixed;
-            bottom: 28px;
-            right: 28px;
-            background: linear-gradient(135deg, #238636, #2ea043);
-            color: white;
-            padding: 12px 22px;
-            border-radius: 12px;
-            font-size: 14px;
-            font-weight: 600;
-            opacity: 0;
-            transform: translateY(16px);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            z-index: 9999;
-            box-shadow: 0 8px 25px rgba(35,134,54,0.4);
-        }
-        .toast-msg.show { opacity: 1; transform: translateY(0); }
+{% block content %}
+<div class="sc-wrap">
 
-        /* Chevron */
-        .chevron { transition: transform 0.3s; color: #484f58; }
+{% if error %}
+<div style="text-align:center;padding:80px 20px;">
+    <div style="font-size:52px;margin-bottom:14px;">🔍</div>
+    <h2 style="font-size:22px;font-weight:800;margin-bottom:8px;">GitHub User Not Found</h2>
+    <p style="color:var(--t3);font-size:14px;margin-bottom:26px;line-height:1.7;">
+        We couldn't find <strong style="color:var(--t1);">@{{ username }}</strong> on GitHub.<br>
+        Please check the username and try again.
+    </p>
+    <a href="/" class="btn-gs-primary">
+        <i class="fas fa-arrow-left" aria-hidden="true"></i>Try Another Username
+    </a>
+</div>
 
-        @media(max-width: 768px) {
-            .stat-grid { grid-template-columns: repeat(2, 1fr); }
-            .profile-hero { padding: 20px; }
-            .score-circle { width: 130px; height: 130px; }
-            .score-num { font-size: 36px; }
-        }
-    </style>
-</head>
-<body>
+{% else %}
 
-<div class="bg-glow"></div>
+<!-- SVG gradient def -->
+<svg width="0" height="0" style="position:absolute;overflow:hidden;">
+    <defs>
+        <linearGradient id="scGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:#2EA043"/>
+            <stop offset="100%" style="stop-color:#3FB950"/>
+        </linearGradient>
+    </defs>
+</svg>
 
-<div class="container py-4" style="max-width: 900px;">
+<!-- TOP BAR -->
+<div class="sc-top anim-up d1">
+    <a href="/" class="back-lnk">
+        <i class="fas fa-arrow-left" aria-hidden="true"></i>Back
+    </a>
+    <span class="page-tag">Developer Analysis</span>
+</div>
 
-    {% if error %}
-    <div class="text-center" style="padding: 80px 20px;">
-        <div style="font-size: 64px; margin-bottom: 16px;">🔍</div>
-        <h2 style="font-size: 22px; font-weight: 700; margin-bottom: 8px;">User Not Found</h2>
-        <p style="color: #484f58; font-size: 15px; margin-bottom: 28px;">
-            GitHub user "{{ username }}" doesn't exist or is unavailable.
-        </p>
-        <a href="/" class="action-btn btn-copy">← Try Another Username</a>
+<!-- PROFILE HERO -->
+<div class="prof-hero sc-row anim-up d1">
+    <div class="prof-row">
+        <div style="flex:1;min-width:0;">
+            <div style="display:flex;align-items:flex-start;gap:18px;">
+                <div class="av-ring">
+                    <img src="{{ avatar }}" class="av-img" alt="{{ name }}'s avatar">
+                </div>
+                <div class="prof-info">
+                    <h1 class="prof-name">{{ name }}</h1>
+                    <a href="https://github.com/{{ username }}" target="_blank" rel="noopener" class="prof-uname">
+                        <i class="fab fa-github" aria-hidden="true"></i>@{{ username }}
+                    </a>
+                    {% if bio %}<p class="prof-bio">{{ bio }}</p>{% endif %}
+                    <div class="prof-meta">
+                        {% if location %}<span class="prof-meta-i"><i class="fas fa-map-marker-alt" aria-hidden="true"></i>{{ location }}</span>{% endif %}
+                        {% if account_age %}<span class="prof-meta-i"><i class="fas fa-calendar-alt" aria-hidden="true"></i>{{ account_age }} on GitHub</span>{% endif %}
+                        {% if website %}<span class="prof-meta-i"><i class="fas fa-link" aria-hidden="true"></i><a href="{{ website }}" target="_blank" rel="noopener">Portfolio</a></span>{% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="sc-col">
+            <div class="sc-ring-wrap" role="img" aria-label="Score {{ score }} out of 200">
+                <svg class="sc-ring-svg" viewBox="0 0 120 120">
+                    <circle class="sc-ring-track" cx="60" cy="60" r="56"/>
+                    <circle class="sc-ring-fill" id="scRing" cx="60" cy="60" r="56"/>
+                </svg>
+                <div class="sc-ring-inside">
+                    <span class="sc-num" id="scNum" aria-live="polite">0</span>
+                    <span class="sc-denom">/ 200</span>
+                </div>
+            </div>
+            <div class="rank-pill" style="color:{{ rank_color }};border-color:{{ rank_color }}40;background:{{ rank_color }}12;">
+                {{ rank_icon }} {{ rank }}
+            </div>
+        </div>
     </div>
-    {% else %}
 
-    <!-- Page Header -->
-    <div class="d-flex align-items-center justify-content-between mb-4 fade-up d1">
-        <a href="/" class="back-btn">
-            <i class="fas fa-arrow-left"></i> Back
-        </a>
-        <span style="font-size: 12px; color: #484f58; font-weight: 500;">
-            <i class="fab fa-github me-1"></i>GitHub Score Card
+    <div class="sc-prog">
+        <div class="sc-prog-hd">
+            <span>Developer Score Progress</span>
+            <span>{{ score }}/200</span>
+        </div>
+        <div class="sc-prog-track">
+            <div class="sc-prog-fill" id="scProgBar"></div>
+        </div>
+    </div>
+</div>
+
+<!-- STATS -->
+<div class="stats-grid sc-row anim-up d2">
+    <div class="stat-box">
+        <span class="stat-ico" aria-hidden="true">📁</span>
+        <div class="stat-val" style="color:var(--blue);">{{ total_repos }}</div>
+        <div class="stat-lbl">Repositories</div>
+    </div>
+    <div class="stat-box">
+        <span class="stat-ico" aria-hidden="true">✅</span>
+        <div class="stat-val" style="color:var(--green);">{{ original_repos }}</div>
+        <div class="stat-lbl">Original</div>
+    </div>
+    <div class="stat-box">
+        <span class="stat-ico" aria-hidden="true">⭐</span>
+        <div class="stat-val" style="color:var(--yellow);">{{ total_stars }}</div>
+        <div class="stat-lbl">Total Stars</div>
+    </div>
+    <div class="stat-box">
+        <span class="stat-ico" aria-hidden="true">🔀</span>
+        <div class="stat-val" style="color:var(--t3);">{{ forked_repos }}</div>
+        <div class="stat-lbl">Forked</div>
+    </div>
+</div>
+
+<!-- STREAK + ACTIVITY + COMPLETENESS -->
+<div class="sac-grid sc-row anim-up d3">
+    <div class="streak-card">
+        <span class="streak-ico" aria-hidden="true">🔥</span>
+        <div class="streak-num">{{ streak }}</div>
+        <div class="streak-lbl">Day Streak</div>
+        {% if streak >= 7 %}<div class="streak-sta" style="color:var(--orange);">🏆 On Fire!</div>
+        {% elif streak >= 3 %}<div class="streak-sta" style="color:var(--yellow);">⚡ Building Up!</div>
+        {% elif streak >= 1 %}<div class="streak-sta" style="color:var(--t3);">Keep going!</div>
+        {% else %}<div class="streak-sta" style="color:var(--t3);">Start today!</div>{% endif %}
+    </div>
+    <div class="act-card">
+        <span class="c-lbl">Commits — Last 30 Days</span>
+        <span class="act-badge" style="color:{{ activity_color }};border-color:{{ activity_color }}35;background:{{ activity_color }}10;">
+            {{ activity_icon }} {{ activity_status }}
         </span>
-    </div>
-
-    <!-- Profile Hero -->
-    <div class="profile-hero mb-4 fade-up d1">
-        <div class="row align-items-center">
-            <div class="col-md-7 mb-4 mb-md-0">
-                <div class="d-flex align-items-center gap-4">
-                    <div class="avatar-ring">
-                        <img src="{{ avatar }}" class="avatar-img" alt="{{ name }}">
-                    </div>
-                    <div>
-                        <h1 style="font-size: 22px; font-weight: 800; margin-bottom: 4px;">{{ name }}</h1>
-                        <a href="https://github.com/{{ username }}" target="_blank"
-                           style="color: #58a6ff; font-size: 13px; text-decoration: none; font-weight: 500;">
-                            <i class="fab fa-github me-1"></i>@{{ username }}
-                        </a>
-                        {% if bio %}
-                        <p style="color: #8b949e; font-size: 13px; margin-top: 10px; line-height: 1.6;">{{ bio }}</p>
-                        {% endif %}
-                        <div class="d-flex flex-wrap gap-3 mt-3">
-                            {% if location %}
-                            <span style="font-size: 12px; color: #484f58; font-weight: 500;">
-                                <i class="fas fa-map-marker-alt me-1" style="color: #238636;"></i>{{ location }}
-                            </span>
-                            {% endif %}
-                            {% if account_age %}
-                            <span style="font-size: 12px; color: #484f58; font-weight: 500;">
-                                <i class="fas fa-calendar-alt me-1" style="color: #238636;"></i>{{ account_age }} on GitHub
-                            </span>
-                            {% endif %}
-                            {% if website %}
-                            <a href="{{ website }}" target="_blank"
-                               style="font-size: 12px; color: #58a6ff; text-decoration: none; font-weight: 500;">
-                                <i class="fas fa-link me-1"></i>Portfolio
-                            </a>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-5 text-center">
-                <div class="score-circle" style="--pct: {{ score_percent }};">
-                    <div class="score-inner">
-                        <div class="score-num" id="scoreDisplay">0</div>
-                        <div class="score-denom">out of 200</div>
-                    </div>
-                </div>
-                <div>
-                    <div class="rank-pill" style="border-color: {{ rank_color }}; color: {{ rank_color }}; background: {{ rank_color }}18;">
-                        {{ rank_icon }} {{ rank }}
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Progress -->
-        <div class="mt-4">
-            <div class="d-flex justify-content-between mb-2">
-                <span style="font-size: 12px; color: #484f58; font-weight: 500;">Developer Score Progress</span>
-                <span style="font-size: 12px; color: #484f58; font-weight: 600;">{{ score }}/200</span>
-            </div>
-            <div class="progress-track">
-                <div class="progress-fill" id="progressBar"></div>
-            </div>
+        <div class="act-num">{{ recent_commits }}</div>
+        <div class="act-sub">commits this month</div>
+        <div class="act-tip">
+            {% if recent_commits >= 30 %}Extremely active! Keep this momentum.
+            {% elif recent_commits >= 10 %}Good cadence — stay consistent!
+            {% elif recent_commits >= 1 %}Push more often to boost your score.
+            {% else %}No recent commits — start coding today!{% endif %}
         </div>
     </div>
-
-    <!-- Stats Grid -->
-    <div class="stat-grid mb-4 fade-up d2">
-        <div class="stat-box">
-            <div class="stat-val" style="color: #58a6ff;">{{ total_repos }}</div>
-            <div class="stat-lbl">Total Repos</div>
-        </div>
-        <div class="stat-box">
-            <div class="stat-val" style="color: #2ea043;">{{ original_repos }}</div>
-            <div class="stat-lbl">Original</div>
-        </div>
-        <div class="stat-box">
-            <div class="stat-val" style="color: #484f58;">{{ forked_repos }}</div>
-            <div class="stat-lbl">Forked</div>
-        </div>
-        <div class="stat-box">
-            <div class="stat-val" style="color: #f0883e;">{{ total_stars }}</div>
-            <div class="stat-lbl">Stars</div>
-        </div>
-    </div>
-
-    <!-- Streak + Activity + Completeness -->
-    <div class="row g-3 mb-4 fade-up d3">
-        <!-- Streak -->
-        <div class="col-md-3">
-            <div class="streak-box h-100 d-flex flex-column align-items-center justify-content-center">
-                <div class="section-label">🔥 Streak</div>
-                <div class="streak-num">{{ streak }}</div>
-                <div style="font-size: 12px; color: #484f58; margin-top: 6px;">consecutive days</div>
-                {% if streak >= 7 %}
-                <div style="font-size: 11px; color: #f0883e; margin-top: 8px; font-weight: 600;">🏆 On Fire!</div>
-                {% elif streak >= 3 %}
-                <div style="font-size: 11px; color: #fd7e14; margin-top: 8px; font-weight: 600;">⚡ Building Up!</div>
-                {% else %}
-                <div style="font-size: 11px; color: #484f58; margin-top: 8px;">Keep pushing!</div>
-                {% endif %}
+    <div class="comp-card">
+        <span class="c-lbl">Profile Completeness</span>
+        <div class="comp-top">
+            <div class="comp-pct" style="color:{% if completeness_percent >= 80 %}var(--green){% elif completeness_percent >= 50 %}var(--orange){% else %}var(--red){% endif %};">{{ completeness_percent }}%</div>
+            <div class="comp-prog">
+                <div class="comp-track"><div class="comp-fill" id="compBar" style="background:{% if completeness_percent >= 80 %}var(--green){% elif completeness_percent >= 50 %}var(--orange){% else %}var(--red){% endif %};"></div></div>
+                <div class="comp-lbl">{{ completeness_percent }}% profile filled</div>
             </div>
         </div>
-
-        <!-- Commit Activity -->
-        <div class="col-md-4">
-            <div class="activity-box h-100">
-                <div class="section-label">📅 Activity (30 days)</div>
-                <span class="activity-badge"
-                      style="border-color: {{ activity_color }}; color: {{ activity_color }}; background: {{ activity_color }}15;">
-                    {{ activity_icon }} {{ activity_status }}
-                </span>
-                <div class="activity-num">{{ recent_commits }}</div>
-                <div style="font-size: 12px; color: #484f58; font-weight: 500;">commits this month</div>
-                <div style="font-size: 11px; color: #484f58; margin-top: 10px; line-height: 1.6;">
-                    {% if recent_commits >= 30 %}Extremely active! Keep this momentum! 🔥
-                    {% elif recent_commits >= 10 %}Good cadence, stay consistent! ⚡
-                    {% elif recent_commits >= 1 %}Push more often to boost your score 📝
-                    {% else %}No recent commits — start coding today! 😴{% endif %}
-                </div>
-            </div>
-        </div>
-
-        <!-- Profile Completeness -->
-        <div class="col-md-5">
-            <div class="complete-box h-100">
-                <div class="section-label">👤 Profile Completeness</div>
-                <div class="d-flex align-items-center gap-3 mb-3">
-                    <div class="complete-pct"
-                         style="color: {% if completeness_percent >= 80 %}#2ea043{% elif completeness_percent >= 50 %}#fd7e14{% else %}#da3633{% endif %};">
-                        {{ completeness_percent }}%
-                    </div>
-                    <div class="flex-grow-1">
-                        <div class="progress-track" style="height: 6px;">
-                            <div class="progress-fill" id="completenessBar"
-                                 style="background: {% if completeness_percent >= 80 %}#238636{% elif completeness_percent >= 50 %}#fd7e14{% else %}#da3633{% endif %};"></div>
-                        </div>
-                    </div>
-                </div>
-                {% for item_name, has_it in completeness_items %}
-                <div class="complete-row">
-                    <span style="color: #8b949e; font-size: 13px;">{{ item_name }}</span>
-                    {% if has_it %}
-                    <i class="fas fa-check-circle check-yes"></i>
-                    {% else %}
-                    <i class="fas fa-times-circle check-no"></i>
-                    {% endif %}
-                </div>
-                {% endfor %}
-            </div>
-        </div>
-    </div>
-
-    <!-- Contribution Graph -->
-    <div class="card-base p-4 mb-4 fade-up d3">
-        <div class="section-label">📊 Contribution Graph — Last 6 Months</div>
-        <canvas id="contributionChart" height="70"></canvas>
-    </div>
-
-    <!-- Tech Stack + Languages -->
-    <div class="row g-3 mb-4 fade-up d4">
-        <div class="col-md-6">
-            <div class="card-base p-4 h-100">
-                <div class="section-label">🛠️ Tech Stack Detected</div>
-                {% if tech_stack %}
-                {% for tech in tech_stack %}
-                <span class="tech-badge">{{ tech }}</span>
-                {% endfor %}
-                {% else %}
-                <p style="color: #484f58; font-size: 13px;">No specific frameworks detected yet.</p>
-                {% endif %}
-            </div>
-        </div>
-        <div class="col-md-6">
-            <div class="card-base p-4 h-100">
-                <div class="section-label">💻 Language Distribution</div>
-                <canvas id="langChart" height="190"></canvas>
-            </div>
-        </div>
-    </div>
-
-    <!-- Repository Quality -->
-    <div class="quality-wrap mb-4 fade-up d4">
-        <div class="row align-items-center">
-            <div class="col-md-3 text-center">
-                <div class="section-label">⭐ Repo Quality</div>
-                <div class="quality-pct"
-                     style="color: {% if quality_data.quality_percent >= 70 %}#2ea043{% elif quality_data.quality_percent >= 40 %}#fd7e14{% else %}#da3633{% endif %};">
-                    {{ quality_data.quality_percent }}%
-                </div>
-            </div>
-            <div class="col-md-9">
-                <div style="font-size: 13px; color: #8b949e; margin-bottom: 8px;">
-                    <strong style="color: #e6edf3;">{{ quality_data.quality_repos }}</strong> out of
-                    <strong style="color: #e6edf3;">{{ quality_data.total_repos }}</strong> repos have quality documentation
-                </div>
-                <div class="quality-bar-track">
-                    <div class="quality-bar-fill" id="qualityBar"></div>
-                </div>
-                <div style="font-size: 11px; color: #484f58; margin-top: 8px;">
-                    Quality = Has description + license or topics tags
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Score History -->
-    {% if score_history_list %}
-    <div class="card-base p-4 mb-4 fade-up d4">
-        <div class="section-label">📈 Score History</div>
-        {% if score_history_list|length == 1 %}
-        <div class="d-flex align-items-center gap-4" style="background: rgba(35,134,54,0.06); border: 1px solid rgba(35,134,54,0.15); border-radius: 16px; padding: 24px;">
-            <div style="text-align: center;">
-                <div style="font-size: 11px; color: #484f58; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px;">First Score</div>
-                <div style="font-size: 48px; font-weight: 900; color: #238636; line-height: 1;">{{ score }}</div>
-                <div style="font-size: 11px; color: #484f58;">out of 200</div>
-            </div>
-            <div>
-                <div style="font-size: 14px; color: #8b949e; line-height: 1.6;">
-                    This is your first analysis!<br>
-                    Search again later to track how the score changes over time. 📊
-                </div>
-            </div>
-        </div>
-        {% else %}
-        <div class="row g-3 mb-3">
-            <div class="col-4 text-center">
-                <div style="font-size: 11px; color: #484f58; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px;">First</div>
-                <div style="font-size: 24px; font-weight: 800; color: #484f58;">{{ score_history_list.0.score }}</div>
-            </div>
-            <div class="col-4 text-center">
-                <div style="font-size: 11px; color: #484f58; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px;">Current</div>
-                <div style="font-size: 24px; font-weight: 800; color: #238636;">{{ score }}</div>
-            </div>
-            <div class="col-4 text-center">
-                <div style="font-size: 11px; color: #484f58; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px;">Searches</div>
-                <div style="font-size: 24px; font-weight: 800; color: #58a6ff;">{{ score_history_list|length }}</div>
-            </div>
-        </div>
-        <canvas id="historyChart" height="90"></canvas>
-        {% endif %}
-    </div>
-    {% endif %}
-
-    <!-- Top Repos -->
-    {% if top_repos %}
-    <div class="mb-4 fade-up d5">
-        <div class="section-label mb-3">🏆 Top Repositories</div>
-        <div class="row g-3">
-            {% for repo in top_repos %}
-            <div class="col-md-4">
-                <div class="repo-card">
-                    <div class="d-flex align-items-start justify-content-between gap-2 mb-2">
-                        <i class="fas fa-book" style="color: #484f58; font-size: 13px; margin-top: 2px; flex-shrink: 0;"></i>
-                        <a href="{{ repo.html_url }}" target="_blank" class="repo-title flex-grow-1">{{ repo.name }}</a>
-                    </div>
-                    <div class="repo-desc">
-                        {% if repo.description %}{{ repo.description }}
-                        {% else %}<em>No description yet</em>{% endif %}
-                    </div>
-                    <div class="d-flex justify-content-between align-items-center mt-3">
-                        {% if repo.language %}
-                        <span style="font-size: 11px; color: #484f58; font-weight: 500;">
-                            <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #f0883e; margin-right: 4px;"></span>
-                            {{ repo.language }}
-                        </span>
-                        {% endif %}
-                        <span style="font-size: 11px; color: #484f58; font-weight: 500;">
-                            <i class="fas fa-star me-1" style="color: #f0883e;"></i>{{ repo.stargazers_count }}
-                        </span>
-                    </div>
-                </div>
-            </div>
-            {% endfor %}
-        </div>
-    </div>
-    {% endif %}
-
-    <!-- All Repos -->
-    {% if all_repos %}
-    <div class="card-base mb-4 fade-up d5">
-        <div class="repos-toggle-btn" onclick="toggleRepos()">
-            <div class="section-label mb-0">📁 All Repositories
-                <span style="color: #58a6ff; margin-left: 8px;">{{ total_repos }}</span>
-            </div>
-            <i class="fas fa-chevron-down chevron" id="repoChevron"></i>
-        </div>
-        <div id="allReposSection" style="display: none;">
-            <div class="repos-table-wrap">
-                <table class="repos-table">
-                    <thead>
-                        <tr>
-                            <th>Repository</th>
-                            <th>Language</th>
-                            <th>Stars</th>
-                            <th>Description</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for repo in all_repos %}
-                        <tr>
-                            <td><a href="{{ repo.html_url }}" target="_blank">{{ repo.name }}</a></td>
-                            <td>{{ repo.language|default:"—" }}</td>
-                            <td style="color: #f0883e;">⭐ {{ repo.stargazers_count }}</td>
-                            <td>{{ repo.description|default:"—"|truncatechars:55 }}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-    {% endif %}
-
-    <!-- Career Tips -->
-    {% if tips %}
-    <div class="card-base p-4 mb-4 fade-up d5">
-        <div class="section-label">🎯 Personalized Career Tips</div>
-        {% for tip in tips %}
-        <div class="tip-card">
-            <div class="tip-icon"><i class="fas fa-lightbulb"></i></div>
-            <div class="tip-text">{{ tip }}</div>
+        {% for item_name, has_it in completeness_items %}
+        <div class="comp-item">
+            <span class="comp-item-nm">{{ item_name }}</span>
+            {% if has_it %}<i class="fas fa-check-circle ci-yes" aria-label="Complete" aria-hidden="true"></i>
+            {% else %}<i class="fas fa-times-circle ci-no" aria-label="Missing" aria-hidden="true"></i>{% endif %}
         </div>
         {% endfor %}
     </div>
-    {% endif %}
-
-    <!-- Actions -->
-    <div class="card-base p-4 mb-4 fade-up d6">
-        <div class="section-label mb-3">🚀 Share & More</div>
-        <div class="d-flex flex-wrap gap-2">
-            <a class="action-btn btn-li"
-               href="https://www.linkedin.com/sharing/share-offsite/?url=https://github.com/{{ username }}"
-               target="_blank">
-                <i class="fab fa-linkedin"></i> Share on LinkedIn
-            </a>
-            <button class="action-btn btn-copy" onclick="copyLink()">
-                <i class="fas fa-link"></i> Copy Link
-            </button>
-            <a class="action-btn btn-lb" href="/leaderboard/">
-                <i class="fas fa-trophy"></i> My Leaderboard
-            </a>
-        </div>
-    </div>
-
-    <div class="text-center fade-up d6">
-        <a href="/" class="back-btn">
-            <i class="fas fa-arrow-left"></i> Search Another User
-        </a>
-    </div>
-
-    {% endif %}
 </div>
 
-<div class="toast-msg" id="toastMsg">✅ Link Copied!</div>
+<!-- CONTRIBUTION GRAPH -->
+<div class="ch-card sc-row anim-up d3">
+    <span class="c-lbl">Contribution Graph — Last 6 Months</span>
+    <canvas id="contribChart" height="70" aria-label="Contribution graph" role="img"></canvas>
+</div>
 
+<!-- TECH STACK + LANGUAGES -->
+<div class="tl-grid sc-row anim-up d4">
+    <div class="ch-card">
+        <span class="c-lbl">Tech Stack Detected</span>
+        {% if tech_stack %}
+            {% for tech in tech_stack %}<span class="badge-tech">{{ tech }}</span>{% endfor %}
+        {% else %}<div class="empty-tech">No specific frameworks detected yet.</div>{% endif %}
+    </div>
+    <div class="ch-card">
+        <span class="c-lbl">Language Distribution</span>
+        <canvas id="langChart" height="190" aria-label="Language chart" role="img"></canvas>
+    </div>
+</div>
+
+<!-- LANGUAGES -->
+{% if languages %}
+<div class="ch-card sc-row anim-up d4">
+    <span class="c-lbl">Languages Used</span>
+    {% for lang in languages %}<span class="badge-lang">{{ lang }}</span>{% endfor %}
+</div>
+{% endif %}
+
+<!-- REPO QUALITY -->
+<div class="qual-card anim-up d4">
+    <span class="c-lbl">Repository Quality</span>
+    <div class="qual-inner">
+        <div class="qual-left">
+            <div class="qual-pct" style="color:{% if quality_data.quality_percent >= 70 %}var(--green){% elif quality_data.quality_percent >= 40 %}var(--orange){% else %}var(--red){% endif %};">{{ quality_data.quality_percent }}%</div>
+            <div class="qual-lbl">Quality Score</div>
+        </div>
+        <div class="qual-right">
+            <div class="qual-desc">
+                <strong style="color:var(--t1);">{{ quality_data.quality_repos }}</strong> of
+                <strong style="color:var(--t1);">{{ quality_data.total_repos }}</strong> repos have quality docs
+            </div>
+            <div class="qual-track"><div class="qual-fill" id="qualBar"></div></div>
+            <div class="qual-crit">
+                <span class="qual-cr"><i class="fas fa-check" style="color:var(--green);font-size:10px;" aria-hidden="true"></i>Description</span>
+                <span class="qual-cr"><i class="fas fa-check" style="color:var(--green);font-size:10px;" aria-hidden="true"></i>License</span>
+                <span class="qual-cr"><i class="fas fa-check" style="color:var(--green);font-size:10px;" aria-hidden="true"></i>Topics</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- SCORE HISTORY -->
+{% if score_history_list %}
+<div class="hist-card-sc sc-row anim-up d5">
+    <span class="c-lbl">Score History</span>
+    {% if score_history_list|length == 1 %}
+    <div class="first-sc">
+        <div>
+            <div class="first-sc-num">{{ score }}</div>
+            <div class="first-sc-denom">out of 200</div>
+        </div>
+        <div class="first-sc-info">
+            First recorded score for <strong style="color:var(--t1);">@{{ username }}</strong>.<br>
+            Search again later to track progress over time. 📊
+        </div>
+    </div>
+    {% else %}
+    <div class="hist-stats">
+        <div class="hist-stat">
+            <div class="hist-stat-num" style="color:var(--t3);">{{ score_history_list.0.score }}</div>
+            <div class="hist-stat-lbl">First Score</div>
+        </div>
+        <div class="hist-stat">
+            <div class="hist-stat-num" style="color:var(--green);">{{ score }}</div>
+            <div class="hist-stat-lbl">Current</div>
+        </div>
+        <div class="hist-stat">
+            <div class="hist-stat-num" style="color:var(--blue);">{{ score_history_list|length }}</div>
+            <div class="hist-stat-lbl">Searches</div>
+        </div>
+    </div>
+    <canvas id="histChart" height="85" aria-label="Score history chart" role="img"></canvas>
+    {% endif %}
+</div>
+{% endif %}
+
+<!-- TOP REPOS -->
+{% if top_repos %}
+<div class="sc-row anim-up d5">
+    <div class="c-lbl" style="margin-bottom:10px;">🏆 Top Repositories</div>
+    <div class="top-repos-grid">
+        {% for repo in top_repos %}
+        <div class="repo-card-gs">
+            <div style="display:flex;align-items:center;gap:6px;">
+                <i class="fas fa-book" style="color:var(--t3);font-size:11px;" aria-hidden="true"></i>
+                <a href="{{ repo.html_url }}" target="_blank" rel="noopener" class="repo-nm">{{ repo.name }}</a>
+            </div>
+            <div class="repo-desc-gs">{% if repo.description %}{{ repo.description }}{% else %}<em style="color:var(--t3);">No description</em>{% endif %}</div>
+            <div class="repo-foot">
+                {% if repo.language %}<div class="repo-lang-gs"><span class="repo-lang-dot" aria-hidden="true"></span>{{ repo.language }}</div>{% else %}<div></div>{% endif %}
+                <div class="repo-stars-gs"><i class="fas fa-star" style="color:var(--yellow);font-size:10px;" aria-hidden="true"></i>{{ repo.stargazers_count }}</div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<!-- ALL REPOS -->
+{% if all_repos %}
+<div class="all-repos-card sc-row anim-up d5">
+    <div class="all-repos-toggle" id="reposToggle" onclick="toggleRepos()" role="button" tabindex="0" aria-expanded="false" onkeydown="if(event.key==='Enter')toggleRepos()">
+        <span class="c-lbl" style="margin:0;">
+            📁 All Repositories
+            <span style="color:var(--blue);font-weight:700;margin-left:6px;">{{ total_repos }}</span>
+        </span>
+        <i class="fas fa-chevron-down chev" id="repoChev" aria-hidden="true"></i>
+    </div>
+    <div class="all-repos-body" id="allReposBody">
+        <div style="overflow-x:auto;">
+            <table class="repos-tbl">
+                <thead><tr><th scope="col">Repository</th><th scope="col">Language</th><th scope="col">Stars</th><th scope="col">Description</th></tr></thead>
+                <tbody>
+                    {% for repo in all_repos %}
+                    <tr>
+                        <td><a href="{{ repo.html_url }}" target="_blank" rel="noopener">{{ repo.name }}</a></td>
+                        <td>{{ repo.language|default:"—" }}</td>
+                        <td><span style="display:flex;align-items:center;gap:4px;"><i class="fas fa-star" style="color:var(--yellow);font-size:10px;" aria-hidden="true"></i>{{ repo.stargazers_count }}</span></td>
+                        <td>{{ repo.description|default:"—"|truncatechars:55 }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- TIPS -->
+{% if tips %}
+<div class="tips-card sc-row anim-up d6">
+    <span class="c-lbl">🎯 Personalized Developer Insights</span>
+    {% for tip in tips %}
+    <div class="tip-gs">
+        <div class="tip-ico-gs" aria-hidden="true"><i class="fas fa-lightbulb"></i></div>
+        <div class="tip-txt-gs">{{ tip }}</div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<!-- ACTIONS -->
+<div class="acts-card sc-row anim-up d6">
+    <span class="c-lbl" style="margin-bottom:12px;display:block;">Share &amp; Actions</span>
+    <div class="acts-row">
+        <a class="btn-a-li" href="https://www.linkedin.com/sharing/share-offsite/?url=https://github.com/{{ username }}" target="_blank" rel="noopener" aria-label="Share on LinkedIn">
+            <i class="fab fa-linkedin" aria-hidden="true"></i>Share on LinkedIn
+        </a>
+        <button class="btn-a-copy" onclick="copyLink()" aria-label="Copy link">
+            <i class="fas fa-link" aria-hidden="true"></i>Copy Link
+        </button>
+        <a class="btn-a-gh" href="https://github.com/{{ username }}" target="_blank" rel="noopener" aria-label="View GitHub profile">
+            <i class="fab fa-github" aria-hidden="true"></i>GitHub Profile
+        </a>
+        <a class="btn-a-lb" href="/leaderboard/" aria-label="View leaderboard">
+            <i class="fas fa-trophy" aria-hidden="true"></i>Leaderboard
+        </a>
+    </div>
+</div>
+
+<div style="text-align:center;" class="anim-up d6">
+    <a href="/" class="btn-gs-ghost"><i class="fas fa-arrow-left" aria-hidden="true"></i>Search Another User</a>
+</div>
+
+{% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
 <script>
-    // Score Count-Up
-    const targetScore = {{ score }};
-    const scoreEl = document.getElementById('scoreDisplay');
-    let cur = 0;
-    const steps = 60;
-    const inc = targetScore / steps;
-    const t = setInterval(() => {
-        cur += inc;
-        if (cur >= targetScore) { cur = targetScore; clearInterval(t); }
-        scoreEl.textContent = Math.floor(cur);
-    }, 1500 / steps);
+{% if not error %}
+const CIRC = 2 * Math.PI * 56;
+const scTarget = {{ score }};
+const scPct = {{ score_percent }};
+const ring = document.getElementById('scRing');
+const scNumEl = document.getElementById('scNum');
 
-    // Progress Bars
-    setTimeout(() => {
-        document.getElementById('progressBar').style.width = "{{ score_percent }}%";
-        document.getElementById('completenessBar').style.width = "{{ completeness_percent }}%";
-        document.getElementById('qualityBar').style.width = "{{ quality_data.quality_percent }}%";
-    }, 400);
+// Score count-up + ring
+let cur = 0;
+const steps = 60;
+const inc = scTarget / steps;
+const t = setInterval(() => {
+    cur += inc;
+    if(cur >= scTarget){ cur = scTarget; clearInterval(t); }
+    scNumEl.textContent = Math.floor(cur);
+    ring.style.strokeDashoffset = CIRC - (cur / 200) * CIRC;
+}, 1500 / steps);
 
-    // Language Chart
-    const langData = {{ language_counts|safe }};
-    if (Object.keys(langData).length > 0) {
-        new Chart(document.getElementById('langChart').getContext('2d'), {
-            type: 'doughnut',
-            data: {
-                labels: Object.keys(langData),
-                datasets: [{
-                    data: Object.values(langData),
-                    backgroundColor: ['#58a6ff','#238636','#f0883e','#da3633','#c9a8f5','#79c0ff','#ffa657','#56d364','#ff7b72','#d2a8ff'],
-                    borderWidth: 0,
-                    hoverOffset: 6
-                }]
-            },
-            options: {
-                plugins: {
-                    legend: { labels: { color: '#8b949e', font: { size: 11, family: 'Inter' }, padding: 12, boxWidth: 10 } }
-                },
-                cutout: '68%'
-            }
-        });
-    }
+// Progress bars
+setTimeout(() => {
+    document.getElementById('scProgBar').style.width = `${scPct}%`;
+    const cb = document.getElementById('compBar');
+    if(cb) cb.style.width = '{{ completeness_percent }}%';
+    const qb = document.getElementById('qualBar');
+    if(qb) qb.style.width = '{{ quality_data.quality_percent }}%';
+}, 350);
 
-    // Contribution Chart
-    const monthlyData = {{ monthly_activity|safe }};
-    new Chart(document.getElementById('contributionChart').getContext('2d'), {
+// Chart defaults
+const chartDefaults = {
+    tooltip: {
+        backgroundColor: '#11161D',
+        borderColor: '#252D38',
+        borderWidth: 1,
+        titleColor: '#F0F6FC',
+        bodyColor: '#8B949E',
+        padding: 10,
+    },
+    tick: { color: '#6E7681', font: { size: 11, family: 'Inter', weight: '500' } },
+    grid: { color: 'rgba(37,45,56,0.5)', drawBorder: false },
+};
+
+// Contribution Chart
+const monthData = {{ monthly_activity|safe }};
+const ctxC = document.getElementById('contribChart');
+if(ctxC){
+    const maxV = Math.max(...Object.values(monthData), 1);
+    new Chart(ctxC.getContext('2d'), {
         type: 'bar',
         data: {
-            labels: Object.keys(monthlyData),
+            labels: Object.keys(monthData),
             datasets: [{
-                data: Object.values(monthlyData),
-                backgroundColor: (ctx) => {
-                    const max = Math.max(...Object.values(monthlyData));
-                    const val = ctx.raw;
-                    const alpha = max > 0 ? 0.3 + (val / max) * 0.7 : 0.3;
-                    return `rgba(35,134,54,${alpha})`;
-                },
-                borderColor: '#238636',
+                data: Object.values(monthData),
+                backgroundColor: Object.values(monthData).map(v => `rgba(46,160,67,${0.18+(v/maxV)*0.65})`),
+                borderColor: 'rgba(46,160,67,0.5)',
                 borderWidth: 1,
-                borderRadius: 8,
+                borderRadius: 6,
                 borderSkipped: false,
             }]
         },
         options: {
-            plugins: { legend: { display: false }, tooltip: {
-                callbacks: { label: (ctx) => ` ${ctx.raw} commits` }
-            }},
+            responsive: true,
+            plugins: {
+                legend: { display: false },
+                tooltip: { ...chartDefaults.tooltip, callbacks: { label: ctx => ` ${ctx.raw} commits` } }
+            },
             scales: {
-                x: {
-                    ticks: { color: '#484f58', font: { size: 12, family: 'Inter', weight: '500' } },
-                    grid: { display: false }
-                },
-                y: {
-                    ticks: { color: '#484f58', font: { size: 11, family: 'Inter' } },
-                    grid: { color: 'rgba(48,54,61,0.3)' },
-                    beginAtZero: true
-                }
+                x: { ticks: chartDefaults.tick, grid: { display: false }, border: { display: false } },
+                y: { ticks: chartDefaults.tick, grid: chartDefaults.grid, border: { display: false }, beginAtZero: true }
             }
         }
     });
+}
 
-    // Score History
-    const scoreHistoryRaw = {{ score_history_json|safe }};
-    if (scoreHistoryRaw.length > 1) {
-        new Chart(document.getElementById('historyChart').getContext('2d'), {
-            type: 'line',
-            data: {
-                labels: scoreHistoryRaw.map(h => h.date),
-                datasets: [{
-                    data: scoreHistoryRaw.map(h => h.score),
-                    borderColor: '#238636',
-                    backgroundColor: (ctx) => {
-                        const gradient = ctx.chart.ctx.createLinearGradient(0, 0, 0, 200);
-                        gradient.addColorStop(0, 'rgba(35,134,54,0.2)');
-                        gradient.addColorStop(1, 'rgba(35,134,54,0)');
-                        return gradient;
-                    },
-                    borderWidth: 2.5,
-                    pointBackgroundColor: '#238636',
-                    pointBorderColor: '#060910',
-                    pointBorderWidth: 2.5,
-                    pointRadius: 5,
-                    pointHoverRadius: 7,
-                    fill: true,
-                    tension: 0.4
-                }]
+// Language Chart
+const langData = {{ language_counts|safe }};
+const ctxL = document.getElementById('langChart');
+if(ctxL && Object.keys(langData).length > 0){
+    new Chart(ctxL.getContext('2d'), {
+        type: 'doughnut',
+        data: {
+            labels: Object.keys(langData),
+            datasets: [{
+                data: Object.values(langData),
+                backgroundColor: ['#58A6FF','#3FB950','#F0883E','#A371F7','#F85149','#79C0FF','#D29922','#56D364'],
+                borderWidth: 0,
+                hoverOffset: 5,
+            }]
+        },
+        options: {
+            plugins: {
+                legend: { labels: { color: '#8B949E', font: { size: 11, family: 'Inter', weight: '500' }, padding: 10, boxWidth: 10, boxHeight: 10 } },
+                tooltip: chartDefaults.tooltip
             },
-            options: {
-                plugins: { legend: { display: false } },
-                scales: {
-                    x: {
-                        ticks: { color: '#484f58', font: { size: 11, family: 'Inter' } },
-                        grid: { color: 'rgba(48,54,61,0.3)' }
-                    },
-                    y: {
-                        ticks: { color: '#484f58', font: { size: 11, family: 'Inter' } },
-                        grid: { color: 'rgba(48,54,61,0.3)' },
-                        min: 0, max: 200
-                    }
-                }
+            cutout: '68%'
+        }
+    });
+}
+
+// Score History Chart
+const histData = {{ score_history_json|safe }};
+const ctxH = document.getElementById('histChart');
+if(ctxH && histData.length > 1){
+    new Chart(ctxH.getContext('2d'), {
+        type: 'line',
+        data: {
+            labels: histData.map(h => h.date),
+            datasets: [{
+                data: histData.map(h => h.score),
+                borderColor: '#3FB950',
+                backgroundColor: (ctx) => {
+                    const g = ctx.chart.ctx.createLinearGradient(0,0,0,160);
+                    g.addColorStop(0,'rgba(63,185,80,0.15)');
+                    g.addColorStop(1,'rgba(63,185,80,0)');
+                    return g;
+                },
+                borderWidth: 2,
+                pointBackgroundColor: '#3FB950',
+                pointBorderColor: '#070A0F',
+                pointBorderWidth: 2,
+                pointRadius: 5,
+                pointHoverRadius: 7,
+                fill: true,
+                tension: 0.4,
+            }]
+        },
+        options: {
+            plugins: {
+                legend: { display: false },
+                tooltip: { ...chartDefaults.tooltip, callbacks: { label: ctx => ` Score: ${ctx.raw}/200` } }
+            },
+            scales: {
+                x: { ticks: chartDefaults.tick, grid: chartDefaults.grid, border: { display: false } },
+                y: { min: 0, max: 200, ticks: chartDefaults.tick, grid: chartDefaults.grid, border: { display: false } }
             }
-        });
-    }
+        }
+    });
+}
 
-    // Toggle Repos
-    function toggleRepos() {
-        const s = document.getElementById('allReposSection');
-        const c = document.getElementById('repoChevron');
-        const open = s.style.display === 'none';
-        s.style.display = open ? 'block' : 'none';
-        c.style.transform = open ? 'rotate(180deg)' : 'rotate(0deg)';
-    }
-
-    // Copy Link
-    function copyLink() {
-        navigator.clipboard.writeText(window.location.href).then(() => {
-            const t = document.getElementById('toastMsg');
-            t.classList.add('show');
-            setTimeout(() => t.classList.remove('show'), 2500);
-        });
-    }
+// Toggle repos
+function toggleRepos(){
+    const b = document.getElementById('allReposBody');
+    const c = document.getElementById('repoChev');
+    const tg = document.getElementById('reposToggle');
+    const open = b.style.display === 'block';
+    b.style.display = open ? 'none' : 'block';
+    c.classList.toggle('open', !open);
+    tg.setAttribute('aria-expanded', !open);
+}
+{% endif %}
 </script>
-</body>
-</html>
+{% endblock %}
