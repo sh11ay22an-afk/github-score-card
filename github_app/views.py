@@ -43,7 +43,6 @@ def fetch_github_data(username):
         if repo['language']:
             language_counts[repo['language']] = language_counts.get(repo['language'], 0) + 1
 
-    # Account age
     created_at = user_data.get('created_at', '')
     account_age = ''
     account_years = 0
@@ -54,10 +53,8 @@ def fetch_github_data(username):
         account_months = (days % 365) // 30
         account_age = f"{account_years}y {account_months}m" if account_years > 0 else f"{account_months} months"
 
-    # Events analysis
     recent_commits, streak, monthly_activity = analyze_events(events)
 
-    # Activity status
     if recent_commits >= 30:
         activity_status, activity_color, activity_icon = "Very Active", "#238636", "🔥"
     elif recent_commits >= 10:
@@ -67,7 +64,6 @@ def fetch_github_data(username):
     else:
         activity_status, activity_color, activity_icon = "Inactive", "#6c757d", "😴"
 
-    # Profile completeness
     completeness_items = [
         ('Avatar', bool(user_data.get('avatar_url'))),
         ('Name', bool(user_data.get('name'))),
@@ -79,13 +75,9 @@ def fetch_github_data(username):
     completeness_score = sum(1 for _, v in completeness_items if v)
     completeness_percent = int((completeness_score / len(completeness_items)) * 100)
 
-    # Tech Stack
     tech_stack = detect_tech_stack(repos, languages)
-
-    # Repository Quality
     quality_data = calculate_repo_quality(repos)
 
-    # FIXED Score Formula
     score = 0
     score += min(original_repos * 5, 50)
     score += min(total_stars * 10, 50)
@@ -106,10 +98,8 @@ def fetch_github_data(username):
     else:
         rank, rank_icon, rank_color = "Expert Developer", "🚀", "#198754"
 
-    # Personalized tips
     tips = generate_tips(user_data, repos, original_repos, forked_repos, repos_with_desc, recent_commits, languages, total_stars)
 
-    # Score History
     score_history = []
     try:
         LeaderboardEntry.objects.update_or_create(
@@ -126,7 +116,7 @@ def fetch_github_data(username):
         )
         ScoreHistory.objects.create(username=username, score=score)
         history = ScoreHistory.objects.filter(username=username).order_by('-recorded_at')[:7]
-        score_history = [{'score': h.score, 'date': h.recorded_at.strftime('%b %d')} for h in reversed(history)]
+        score_history = [{'score': h.score, 'date': h.recorded_at.strftime('%d %b')} for h in reversed(history)]
     except:
         pass
 
@@ -171,20 +161,11 @@ def fetch_github_data(username):
 def detect_tech_stack(repos, languages):
     detected = list(languages)
     keywords = {
-        'Django': ['django'],
-        'Flask': ['flask'],
-        'FastAPI': ['fastapi'],
-        'React': ['react'],
-        'Next.js': ['nextjs', 'next-js'],
-        'Vue.js': ['vue'],
-        'Node.js': ['nodejs', 'express'],
-        'MongoDB': ['mongodb', 'mongo'],
-        'PostgreSQL': ['postgresql', 'postgres'],
-        'Docker': ['docker'],
-        'Machine Learning': ['ml-', 'machine-learning'],
-        'REST API': ['rest-api', 'restapi'],
-        'Flutter': ['flutter'],
-        'TensorFlow': ['tensorflow'],
+        'Django': ['django'], 'Flask': ['flask'], 'FastAPI': ['fastapi'],
+        'React': ['react'], 'Next.js': ['nextjs', 'next-js'], 'Vue.js': ['vue'],
+        'Node.js': ['nodejs', 'express'], 'MongoDB': ['mongodb', 'mongo'],
+        'PostgreSQL': ['postgresql', 'postgres'], 'Docker': ['docker'],
+        'Machine Learning': ['ml-', 'machine-learning'], 'Flutter': ['flutter'],
     }
     for repo in repos:
         name = (repo.get('name', '') or '').lower()
@@ -203,22 +184,10 @@ def calculate_repo_quality(repos):
     if not repos:
         return {'avg_quality': 0, 'quality_repos': 0, 'total_repos': 0, 'quality_percent': 0}
     original = [r for r in repos if not r.get('fork')]
-    quality_count = 0
-    for repo in original:
-        pts = 0
-        if repo.get('description'): pts += 1
-        if repo.get('license'): pts += 1
-        if repo.get('topics'): pts += 1
-        if pts >= 2:
-            quality_count += 1
+    quality_count = sum(1 for r in original if (r.get('description') and r.get('license')) or (r.get('description') and r.get('topics')))
     total = len(original)
     avg = quality_count / total if total > 0 else 0
-    return {
-        'avg_quality': avg,
-        'quality_repos': quality_count,
-        'total_repos': total,
-        'quality_percent': int(avg * 100)
-    }
+    return {'avg_quality': avg, 'quality_repos': quality_count, 'total_repos': total, 'quality_percent': int(avg * 100)}
 
 
 def analyze_events(events):
@@ -228,8 +197,8 @@ def analyze_events(events):
     thirty_days_ago = datetime.now(timezone.utc) - timedelta(days=30)
     recent_commits = 0
     commit_dates = set()
-
     monthly_activity = {}
+
     for i in range(5, -1, -1):
         month = datetime.now(timezone.utc) - timedelta(days=30 * i)
         monthly_activity[month.strftime('%b')] = 0
@@ -241,11 +210,7 @@ def analyze_events(events):
             created_at = event.get('created_at', '')
             if not created_at:
                 continue
-
-            event_date = datetime.strptime(
-                created_at, '%Y-%m-%dT%H:%M:%SZ'
-            ).replace(tzinfo=timezone.utc)
-
+            event_date = datetime.strptime(created_at, '%Y-%m-%dT%H:%M:%SZ').replace(tzinfo=timezone.utc)
             payload = event.get('payload', {})
             commits_list = payload.get('commits', [])
             size = payload.get('size', 0)
@@ -253,23 +218,18 @@ def analyze_events(events):
 
             if event_date > thirty_days_ago:
                 recent_commits += commits_count
-
             commit_dates.add(event_date.date())
-
             month_key = event_date.strftime('%b')
             if month_key in monthly_activity:
                 monthly_activity[month_key] += commits_count
-
         except Exception as e:
             print(f"Event error: {e}")
             continue
 
-    # Streak calculate karo
     streak = 0
     if commit_dates:
         today = datetime.now(timezone.utc).date()
         yesterday = today - timedelta(days=1)
-
         start = today if today in commit_dates else yesterday
         current = start
         while current in commit_dates:
@@ -298,8 +258,6 @@ def generate_tips(user_data, repos, original_repos, forked_repos, repos_with_des
         tips.append("Only one language detected — multi-language developers get 3x more recruiter messages")
     if total_stars == 0:
         tips.append("No stars yet — share your best project on LinkedIn to start getting stars")
-    if original_repos < 3:
-        tips.append("Build at least 3 strong original projects — portfolio matters more than your degree")
     if not tips:
         tips.append("Great profile! Pin your top 6 repos on GitHub so recruiters see your best work first")
         tips.append("Write a detailed README — treat it like a mini case study of your work")
@@ -315,10 +273,32 @@ def score_card(request):
     data = {'error': False}
     if username:
         result = fetch_github_data(username)
-        data = result if result else {'error': True, 'username': username}
+        if result:
+            # Session mein username add karo
+            searched = request.session.get('searched_users', [])
+            if username not in searched:
+                searched.append(username)
+            request.session['searched_users'] = searched
+            request.session.modified = True
+            data = result
+        else:
+            data = {'error': True, 'username': username}
     return render(request, 'score_card.html', data)
 
 
 def leaderboard(request):
-    entries = LeaderboardEntry.objects.all().order_by('-score')[:20]
-    return render(request, 'leaderboard.html', {'entries': entries})
+    # Sirf session ke users dikhao
+    searched = request.session.get('searched_users', [])
+    if searched:
+        entries = LeaderboardEntry.objects.filter(
+            username__in=searched
+        ).order_by('-score')
+    else:
+        entries = []
+    return render(request, 'leaderboard.html', {'entries': entries, 'is_empty': len(searched) == 0})
+
+
+def clear_leaderboard(request):
+    request.session['searched_users'] = []
+    request.session.modified = True
+    return render(request, 'leaderboard.html', {'entries': [], 'is_empty': True})
