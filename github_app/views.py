@@ -100,7 +100,9 @@ def fetch_github_data(username):
 
     tips = generate_tips(user_data, repos, original_repos, forked_repos, repos_with_desc, recent_commits, languages, total_stars)
 
-    score_history = []
+    # Score History
+    score_history_list = []
+    score_history_json = '[]'
     try:
         LeaderboardEntry.objects.update_or_create(
             username=username,
@@ -115,8 +117,9 @@ def fetch_github_data(username):
             }
         )
         ScoreHistory.objects.create(username=username, score=score)
-        history = ScoreHistory.objects.filter(username=username).order_by('-recorded_at')[:7]
-        score_history = [{'score': h.score, 'date': h.recorded_at.strftime('%d %b')} for h in reversed(history)]
+        history = ScoreHistory.objects.filter(username=username).order_by('recorded_at')[:10]
+        score_history_list = [{'score': h.score, 'date': h.recorded_at.strftime('%d %b')} for h in history]
+        score_history_json = json.dumps(score_history_list)
     except:
         pass
 
@@ -153,7 +156,8 @@ def fetch_github_data(username):
         'quality_data': quality_data,
         'streak': streak,
         'monthly_activity': json.dumps(monthly_activity),
-        'score_history': json.dumps(score_history),
+        'score_history_list': score_history_list,
+        'score_history_json': score_history_json,
         'error': False,
     }
 
@@ -265,21 +269,39 @@ def generate_tips(user_data, repos, original_repos, forked_repos, repos_with_des
 
 
 def home(request):
-    return render(request, 'home.html')
+    # Search history from session
+    search_history = request.session.get('search_history', [])
+    return render(request, 'home.html', {'search_history': search_history})
 
 
 def score_card(request):
-    username = request.GET.get('username', '')
+    username = request.GET.get('username', '').strip()
     data = {'error': False}
     if username:
         result = fetch_github_data(username)
         if result:
-            # Session mein username add karo
+            # Session leaderboard
             searched = request.session.get('searched_users', [])
             if username not in searched:
                 searched.append(username)
             request.session['searched_users'] = searched
+
+            # Search history
+            search_history = request.session.get('search_history', [])
+            new_entry = {
+                'username': username,
+                'name': result['name'],
+                'avatar': result['avatar'],
+                'score': result['score'],
+                'rank_icon': result['rank_icon'],
+            }
+            # Remove if already exists
+            search_history = [h for h in search_history if h['username'] != username]
+            search_history.insert(0, new_entry)
+            search_history = search_history[:10]  # Max 10
+            request.session['search_history'] = search_history
             request.session.modified = True
+
             data = result
         else:
             data = {'error': True, 'username': username}
@@ -287,12 +309,9 @@ def score_card(request):
 
 
 def leaderboard(request):
-    # Sirf session ke users dikhao
     searched = request.session.get('searched_users', [])
     if searched:
-        entries = LeaderboardEntry.objects.filter(
-            username__in=searched
-        ).order_by('-score')
+        entries = LeaderboardEntry.objects.filter(username__in=searched).order_by('-score')
     else:
         entries = []
     return render(request, 'leaderboard.html', {'entries': entries, 'is_empty': len(searched) == 0})
@@ -302,3 +321,11 @@ def clear_leaderboard(request):
     request.session['searched_users'] = []
     request.session.modified = True
     return render(request, 'leaderboard.html', {'entries': [], 'is_empty': True})
+
+
+def clear_history(request):
+    request.session['search_history'] = []
+    request.session['searched_users'] = []
+    request.session.modified = True
+    from django.shortcuts import redirect
+    return redirect('/')

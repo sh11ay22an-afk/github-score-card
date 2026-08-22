@@ -11,25 +11,15 @@
         body {
             background: linear-gradient(135deg, #0d1117 0%, #161b22 100%);
             min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
             font-family: 'Segoe UI', sans-serif;
+            color: #e6edf3;
         }
-        .main-card {
-            background: rgba(22, 27, 34, 0.9);
-            border: 1px solid rgba(48, 54, 61, 0.8);
-            border-radius: 20px;
-            padding: 50px 40px;
-            width: 100%;
-            max-width: 480px;
-            text-align: center;
-        }
-        h1 { font-size: 28px; font-weight: 700; color: #e6edf3; margin-bottom: 6px; }
-        .subtitle { color: #8b949e; font-size: 14px; margin-bottom: 30px; }
+        .main-wrap { max-width: 520px; margin: 0 auto; padding: 40px 20px; }
+        h1 { font-size: 26px; font-weight: 700; color: #e6edf3; margin-bottom: 6px; }
+        .subtitle { color: #8b949e; font-size: 14px; margin-bottom: 28px; }
         .search-input {
-            background: rgba(13, 17, 23, 0.8);
-            border: 1px solid rgba(48, 54, 61, 0.8);
+            background: rgba(13,17,23,0.8);
+            border: 1px solid rgba(48,54,61,0.8);
             border-radius: 10px;
             color: #e6edf3;
             padding: 14px 16px;
@@ -54,30 +44,41 @@
             transition: opacity 0.2s;
         }
         .search-btn:hover { opacity: 0.9; }
-        .features {
-            display: flex;
-            justify-content: center;
-            gap: 16px;
-            margin-top: 24px;
-            flex-wrap: wrap;
-        }
+        .features { display: flex; justify-content: center; gap: 14px; margin-top: 20px; flex-wrap: wrap; }
         .feature-item { color: #8b949e; font-size: 12px; }
         .feature-item i { color: #238636; margin-right: 4px; }
-        .lb-link {
-            display: inline-block;
-            margin-top: 20px;
-            color: #58a6ff;
-            font-size: 13px;
-            text-decoration: none;
-        }
+        .lb-link { display: inline-block; margin-top: 16px; color: #58a6ff; font-size: 13px; text-decoration: none; }
         .lb-link:hover { text-decoration: underline; }
+        .history-section { margin-top: 32px; }
+        .section-title { font-size: 11px; font-weight: 600; color: #8b949e; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+        .history-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 14px;
+            background: rgba(22,27,34,0.85);
+            border: 1px solid rgba(48,54,61,0.8);
+            border-radius: 10px;
+            margin-bottom: 8px;
+            text-decoration: none;
+            transition: border-color 0.2s, background 0.2s;
+        }
+        .history-item:hover { border-color: #238636; background: rgba(35,134,54,0.08); }
+        .history-avatar { width: 40px; height: 40px; border-radius: 50%; border: 2px solid rgba(48,54,61,0.8); }
+        .history-name { font-size: 14px; font-weight: 600; color: #e6edf3; }
+        .history-username { font-size: 12px; color: #58a6ff; }
+        .history-score { margin-left: auto; background: linear-gradient(135deg, #238636, #2ea043); padding: 4px 12px; border-radius: 50px; font-size: 13px; font-weight: 700; color: white; }
+        .clear-link { font-size: 11px; color: #da3633; text-decoration: none; }
+        .clear-link:hover { text-decoration: underline; }
     </style>
 </head>
 <body>
-<div class="main-card">
-    <i class="fab fa-github" style="font-size: 55px; color: #e6edf3; margin-bottom: 12px; display: block;"></i>
-    <h1>GitHub Score Card</h1>
-    <p class="subtitle">Analyze any GitHub profile and get a developer score</p>
+<div class="main-wrap">
+    <div class="text-center mb-4">
+        <i class="fab fa-github" style="font-size: 52px; color: #e6edf3; margin-bottom: 10px; display: block;"></i>
+        <h1>GitHub Score Card</h1>
+        <p class="subtitle">Analyze any GitHub profile and get a developer score</p>
+    </div>
 
     <form action="/score/" method="get">
         <input type="text" name="username" class="search-input"
@@ -90,13 +91,35 @@
     <div class="features">
         <div class="feature-item"><i class="fas fa-check-circle"></i>Score & Rank</div>
         <div class="feature-item"><i class="fas fa-check-circle"></i>Activity Tracker</div>
-        <div class="feature-item"><i class="fas fa-check-circle"></i>PDF Download</div>
-        <div class="feature-item"><i class="fas fa-check-circle"></i>Profile Analysis</div>
+        <div class="feature-item"><i class="fas fa-check-circle"></i>Tech Stack</div>
+        <div class="feature-item"><i class="fas fa-check-circle"></i>Career Tips</div>
     </div>
 
-    <a href="/leaderboard/" class="lb-link">
-        <i class="fas fa-trophy me-1"></i>View Developer Leaderboard
-    </a>
+    <div class="text-center">
+        <a href="/leaderboard/" class="lb-link">
+            <i class="fas fa-trophy me-1"></i>View My Leaderboard
+        </a>
+    </div>
+
+    <!-- Search History -->
+    {% if search_history %}
+    <div class="history-section">
+        <div class="section-title">
+            <span>🕐 Recent Searches</span>
+            <a href="/history/clear/" class="clear-link">Clear History</a>
+        </div>
+        {% for item in search_history %}
+        <a href="/score/?username={{ item.username }}" class="history-item">
+            <img src="{{ item.avatar }}" class="history-avatar" alt="{{ item.name }}">
+            <div>
+                <div class="history-name">{{ item.name }}</div>
+                <div class="history-username">@{{ item.username }}</div>
+            </div>
+            <div class="history-score">{{ item.rank_icon }} {{ item.score }}/200</div>
+        </a>
+        {% endfor %}
+    </div>
+    {% endif %}
 </div>
 </body>
 </html>
